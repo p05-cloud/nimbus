@@ -22,18 +22,53 @@ const requestSchema = z.object({
 async function buildLiveCostSummary(): Promise<CostSummary> {
   const data = await getDashboardData();
 
+  const services = data.topServices;
+  const totalMTD = data.totalSpendMTD;
+
+  // Derive recommendations from real cost patterns
+  const computeServices = services.filter((s) => /ec2|compute|instance|lambda|fargate|ecs/i.test(s.name));
+  const storageServices = services.filter((s) => /s3|storage|ebs|efs|glacier|backup|snapshot/i.test(s.name));
+  const stableServices = services.filter((s) => Math.abs(s.change) < 20 && s.cost > 1);
+  const tinyServices = services.filter((s) => s.cost > 0 && s.cost < totalMTD * 0.01);
+
+  const recommendations = [
+    { category: 'Rightsizing', count: computeServices.length, savings: computeServices.reduce((s, c) => s + c.cost, 0) * 0.15 },
+    { category: 'Savings Plans', count: stableServices.length, savings: stableServices.reduce((s, c) => s + c.cost, 0) * 0.30 },
+    { category: 'Storage Optimization', count: storageServices.length, savings: storageServices.reduce((s, c) => s + c.cost, 0) * 0.20 },
+    { category: 'Idle Resources', count: tinyServices.length, savings: tinyServices.reduce((s, c) => s + c.cost, 0) * 0.50 },
+  ].filter((r) => r.count > 0);
+
+  // Derive anomalies from services with >20% MoM increase
+  const anomalies = services
+    .filter((s) => s.change > 20)
+    .map((s) => ({
+      title: `${s.name} cost spike (${s.change.toFixed(0)}% MoM increase)`,
+      provider: s.provider,
+      service: s.name,
+      impact: s.cost * (s.change / 100),
+      status: 'open',
+    }));
+
+  // Derive budget (110% of forecast)
+  const budgetLimit = data.forecastedSpend * 1.1;
+  const budgets = [
+    { name: 'AWS Monthly Budget', limit: budgetLimit, spent: totalMTD, provider: 'AWS' },
+  ];
+
+  const totalSavings = recommendations.reduce((s, r) => s + r.savings, 0);
+
   return {
-    totalSpendMTD: data.totalSpendMTD,
+    totalSpendMTD: totalMTD,
     forecastedSpend: data.forecastedSpend,
-    savingsIdentified: 0,
-    activeAnomalies: 0,
+    savingsIdentified: totalSavings,
+    activeAnomalies: anomalies.length,
     providers: [
-      { name: 'AWS', spend: data.totalSpendMTD, change: data.changePercentage },
+      { name: 'AWS', spend: totalMTD, change: data.changePercentage },
     ],
-    topServices: data.topServices,
-    budgets: [],
-    recommendations: [],
-    anomalies: [],
+    topServices: services,
+    budgets,
+    recommendations,
+    anomalies,
   };
 }
 
