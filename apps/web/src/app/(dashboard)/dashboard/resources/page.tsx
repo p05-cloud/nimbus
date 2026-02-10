@@ -1,4 +1,4 @@
-import { Server, Layers, ArrowRight } from 'lucide-react';
+import { Server, Layers, DollarSign } from 'lucide-react';
 
 export const metadata = { title: 'Resources' };
 
@@ -16,17 +16,32 @@ export default function ResourcesPage() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
           <Server className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="mt-6 text-xl font-semibold">Resource Inventory — Coming Soon</h2>
+        <h2 className="mt-6 text-xl font-semibold">Resource Inventory — Setup Required</h2>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Individual resource discovery requires AWS Config or AWS Resource Explorer integration.
-          This will provide per-resource cost attribution, tagging status, and idle resource detection.
+          Per-resource discovery needs AWS Resource Explorer to be enabled.
+          This is a free service — one CloudShell command activates it.
         </p>
 
         <div className="mt-8 grid w-full max-w-lg gap-3">
           {[
-            { label: 'AWS Config', description: 'Resource configuration tracking and compliance', status: 'Requires setup' },
-            { label: 'AWS Resource Explorer', description: 'Cross-region resource discovery', status: 'Requires setup' },
-            { label: 'Cost Allocation Tags', description: 'Tag-based cost attribution per resource', status: 'Requires setup' },
+            {
+              label: 'AWS Resource Explorer',
+              description: 'Cross-region resource discovery — lists every EC2, S3, RDS etc.',
+              cost: 'Free',
+              costColor: 'text-green-600 dark:text-green-400',
+            },
+            {
+              label: 'Cost Allocation Tags',
+              description: 'Tag-based cost attribution per resource (cost-center, team, env)',
+              cost: 'Free',
+              costColor: 'text-green-600 dark:text-green-400',
+            },
+            {
+              label: 'AWS Config (optional)',
+              description: 'Configuration tracking + compliance rules for governance',
+              cost: '~$2-3/mo',
+              costColor: 'text-yellow-600 dark:text-yellow-400',
+            },
           ].map((item) => (
             <div key={item.label} className="flex items-center justify-between rounded-lg border p-4 text-left">
               <div className="flex items-center gap-3">
@@ -36,16 +51,25 @@ export default function ResourcesPage() {
                   <p className="text-xs text-muted-foreground">{item.description}</p>
                 </div>
               </div>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                {item.status}
-              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                <DollarSign className="h-3 w-3 text-muted-foreground" />
+                <span className={`text-xs font-medium ${item.costColor}`}>
+                  {item.cost}
+                </span>
+              </div>
             </div>
           ))}
         </div>
 
-        <p className="mt-6 text-xs text-muted-foreground">
-          Meanwhile, service-level cost data is available on the <strong>Cost Explorer</strong> and <strong>Dashboard</strong> pages.
-        </p>
+        <div className="mt-6 w-full max-w-lg rounded-lg border border-blue-200 bg-blue-50 p-4 text-left dark:border-blue-800 dark:bg-blue-900/20">
+          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">To enable (run in AWS CloudShell):</p>
+          <code className="mt-2 block rounded bg-blue-100 p-2 text-xs text-blue-900 dark:bg-blue-900/40 dark:text-blue-100">
+            aws resource-explorer-2 create-index --type LOCAL --region ap-south-1
+          </code>
+          <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+            After enabling, resource data will appear on this page within minutes. Zero additional cost.
+          </p>
+        </div>
       </div>
     </div>
   );

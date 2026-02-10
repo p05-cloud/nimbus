@@ -53,7 +53,7 @@ export default async function CloudAccountsPage() {
                     <Cloud className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">PFL Production AWS</h3>
+                    <h3 className="font-semibold">ACC Digitalization</h3>
                     <p className="text-xs text-muted-foreground">Amazon Web Services</p>
                   </div>
                 </div>
