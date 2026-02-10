@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { getCurrencySymbol, formatCurrency } from '@/lib/utils';
 
 // TODO: Replace with real data
 const data = [
@@ -55,7 +56,7 @@ export function CostTrendChart() {
             <YAxis
               className="text-xs"
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `${getCurrencySymbol()}${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
               contentStyle={{
@@ -64,7 +65,7 @@ export function CostTrendChart() {
                 borderRadius: '8px',
                 fontSize: '12px',
               }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+              formatter={(value: number) => [formatCurrency(value), undefined]}
             />
             <Area
               type="monotone"

@@ -13,6 +13,8 @@ import {
   Settings,
   Shield,
   Cloud,
+  Sparkles,
+  Monitor,
 } from 'lucide-react';
 
 const navigation = [
@@ -27,10 +29,15 @@ const navigation = [
 
 const secondaryNav = [
   { name: 'Governance', href: '/dashboard/governance', icon: Shield },
+  { name: 'NOC / TV Mode', href: '/dashboard/tv', icon: Monitor },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onOpenChat?: () => void;
+}
+
+export function Sidebar({ onOpenChat }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -94,6 +101,17 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* AI Chat Button */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={onOpenChat}
+          className="flex w-full items-center gap-3 rounded-lg bg-gradient-to-r from-primary to-blue-500 px-3 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg hover:brightness-110"
+        >
+          <Sparkles className="h-4 w-4" />
+          Ask Nimbus AI
+        </button>
+      </div>
 
       {/* Footer */}
       <div className="border-t px-3 py-3">

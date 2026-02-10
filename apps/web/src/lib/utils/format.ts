@@ -1,24 +1,43 @@
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+type SupportedCurrency = 'INR' | 'USD' | 'EUR' | 'GBP';
 
-const compactFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  notation: 'compact',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 1,
-});
+const CURRENCY_CONFIG: Record<SupportedCurrency, { locale: string; symbol: string }> = {
+  INR: { locale: 'en-IN', symbol: '\u20B9' },
+  USD: { locale: 'en-US', symbol: '$' },
+  EUR: { locale: 'de-DE', symbol: '\u20AC' },
+  GBP: { locale: 'en-GB', symbol: '\u00A3' },
+};
 
-export function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount);
+const DEFAULT_CURRENCY: SupportedCurrency =
+  (process.env.NEXT_PUBLIC_DEFAULT_CURRENCY as SupportedCurrency) || 'INR';
+
+function getConfig(currency?: SupportedCurrency) {
+  const cur = currency || DEFAULT_CURRENCY;
+  return { currency: cur, ...CURRENCY_CONFIG[cur] };
 }
 
-export function formatCurrencyCompact(amount: number): string {
-  return compactFormatter.format(amount);
+export function formatCurrency(amount: number, currency?: SupportedCurrency): string {
+  const cfg = getConfig(currency);
+  return new Intl.NumberFormat(cfg.locale, {
+    style: 'currency',
+    currency: cfg.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function formatCurrencyCompact(amount: number, currency?: SupportedCurrency): string {
+  const cfg = getConfig(currency);
+  return new Intl.NumberFormat(cfg.locale, {
+    style: 'currency',
+    currency: cfg.currency,
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+export function getCurrencySymbol(currency?: SupportedCurrency): string {
+  return getConfig(currency).symbol;
 }
 
 export function formatPercentage(value: number, decimals = 1): string {
@@ -26,11 +45,12 @@ export function formatPercentage(value: number, decimals = 1): string {
 }
 
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US').format(value);
+  const cfg = getConfig();
+  return new Intl.NumberFormat(cfg.locale).format(value);
 }
 
 export function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

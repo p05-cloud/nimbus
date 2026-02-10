@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Cloud, Shield, Zap, BarChart3, TrendingDown, Globe, ArrowRight } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function HomePage() {
   return (
@@ -13,7 +14,8 @@ export default function HomePage() {
             </div>
             <span className="text-lg font-bold tracking-tight">Nimbus</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               href="/auth/signin"
               className="inline-flex h-9 items-center px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"

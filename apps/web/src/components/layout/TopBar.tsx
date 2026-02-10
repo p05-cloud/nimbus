@@ -1,7 +1,7 @@
 'use client';
 
 import { signOut } from 'next-auth/react';
-import { Moon, Sun, Bell, LogOut } from 'lucide-react';
+import { Moon, Sun, Bell, LogOut, Sparkles } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 interface TopBarProps {
@@ -10,9 +10,10 @@ interface TopBarProps {
     email?: string | null;
     image?: string | null;
   };
+  onOpenChat?: () => void;
 }
 
-export function TopBar({ user }: TopBarProps) {
+export function TopBar({ user, onOpenChat }: TopBarProps) {
   const { theme, setTheme } = useTheme();
 
   return (
@@ -24,6 +25,15 @@ export function TopBar({ user }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* AI Chat */}
+        <button
+          onClick={onOpenChat}
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary/10 px-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Ask AI</span>
+        </button>
+
         {/* Notifications */}
         <button className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
           <Bell className="h-4 w-4" />

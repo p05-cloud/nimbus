@@ -54,11 +54,11 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-sm font-medium">Default Currency</label>
-              <select className="mt-1 flex h-9 w-full rounded-md border bg-transparent px-3 text-sm">
+              <select defaultValue="INR" className="mt-1 flex h-9 w-full rounded-md border bg-transparent px-3 text-sm">
+                <option value="INR">INR (&#8377;)</option>
                 <option value="USD">USD ($)</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="INR">INR</option>
+                <option value="EUR">EUR (&euro;)</option>
+                <option value="GBP">GBP (&pound;)</option>
               </select>
             </div>
           </div>
