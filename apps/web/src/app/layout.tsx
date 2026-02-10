@@ -7,12 +7,13 @@ import '@/styles/globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Nimbus',
+    default: 'Nimbus — Cloud FinOps Platform',
     template: '%s | Nimbus',
   },
-  description: 'Unified Cloud FinOps Platform — Cost visibility, optimization, and governance.',
+  description: 'Nimbus by ACC for Poonawalla Fincorp — Unified Cloud FinOps Platform for cost visibility, optimization, and governance.',
   icons: {
     icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 

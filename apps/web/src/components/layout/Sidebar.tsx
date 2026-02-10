@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -71,9 +72,13 @@ export function Sidebar({ onOpenChat }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-14 items-center border-b px-3">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-              <Cloud className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <Image
+              src="/images/pfl-logo.png"
+              alt="Poonawalla Fincorp"
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0 rounded-lg object-contain"
+            />
             <span
               className={cn(
                 'text-lg font-semibold tracking-tight transition-all duration-300',
@@ -170,8 +175,12 @@ export function Sidebar({ onOpenChat }: SidebarProps) {
         {expanded && (
           <div className="border-t px-2 py-3">
             <div className="rounded-md bg-sidebar-accent/50 px-3 py-2">
-              <p className="text-xs font-medium">Nimbus v0.1.0</p>
-              <p className="text-xs text-muted-foreground">Cloud FinOps Platform</p>
+              <div className="flex items-center gap-2">
+                <Image src="/images/acc-logo.png" alt="ACC" width={40} height={19} className="h-4 w-auto" />
+                <span className="text-[10px] text-muted-foreground">×</span>
+                <Image src="/images/pfl-logo.png" alt="PFL" width={48} height={19} className="h-4 w-auto" />
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">Nimbus v0.1.0 — Cloud FinOps Platform</p>
             </div>
           </div>
         )}

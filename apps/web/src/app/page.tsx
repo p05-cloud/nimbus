@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Cloud, Shield, Zap, BarChart3, TrendingDown, Globe, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { Shield, Zap, BarChart3, TrendingDown, Globe, Cloud, ArrowRight } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function HomePage() {
@@ -8,11 +9,24 @@ export default function HomePage() {
       {/* Nav */}
       <nav className="border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Cloud className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold tracking-tight">Nimbus</span>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/images/acc-logo.png"
+              alt="ACC — Applied Cloud Computing"
+              width={80}
+              height={38}
+              className="h-8 w-auto"
+              priority
+            />
+            <span className="text-xs text-muted-foreground">×</span>
+            <Image
+              src="/images/pfl-logo.png"
+              alt="Poonawalla Fincorp"
+              width={100}
+              height={38}
+              className="h-8 w-auto"
+              priority
+            />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -155,15 +169,14 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
-              <Cloud className="h-3 w-3 text-primary-foreground" />
-            </div>
-            <span className="text-sm font-semibold">Nimbus</span>
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-6 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Image src="/images/acc-logo.png" alt="ACC" width={60} height={28} className="h-6 w-auto" />
+            <span className="text-xs text-muted-foreground">×</span>
+            <Image src="/images/pfl-logo.png" alt="Poonawalla Fincorp" width={80} height={28} className="h-6 w-auto" />
           </div>
           <p className="text-xs text-muted-foreground">
-            Unified Cloud FinOps Platform
+            Nimbus — Cloud FinOps Platform by ACC for Poonawalla Fincorp
           </p>
         </div>
       </footer>
