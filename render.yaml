@@ -16,7 +16,7 @@ services:
     name: nimbus-web
     runtime: node
     plan: free
-    buildCommand: pnpm install && pnpm --filter @nimbus/web build
+    buildCommand: NODE_ENV=development pnpm install && NODE_ENV=production pnpm --filter @nimbus/web build
     startCommand: pnpm --filter @nimbus/web start
     healthCheckPath: /api/health
     envVars:
