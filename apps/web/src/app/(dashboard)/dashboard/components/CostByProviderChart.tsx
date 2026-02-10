@@ -3,23 +3,35 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
-const data = [
-  { name: 'AWS', value: 20800, color: 'hsl(25, 95%, 53%)' },
-  { name: 'Azure', value: 14200, color: 'hsl(210, 100%, 50%)' },
-  { name: 'GCP', value: 9600, color: 'hsl(142, 76%, 36%)' },
-  { name: 'Kubernetes', value: 3200, color: 'hsl(280, 67%, 55%)' },
-];
+interface CostByProviderChartProps {
+  monthlyCosts: { month: string; cost: number }[];
+}
 
-const total = data.reduce((sum, item) => sum + item.value, 0);
-
-export function CostByProviderChart() {
+export function CostByProviderChart({ monthlyCosts }: CostByProviderChartProps) {
   const { format } = useCurrency();
+
+  // Aggregate last month's total as "AWS" (single provider for now)
+  const currentMonthCost = monthlyCosts.length > 0 ? monthlyCosts[monthlyCosts.length - 1].cost : 0;
+
+  const data = [
+    { name: 'AWS', value: currentMonthCost, color: 'hsl(25, 95%, 53%)' },
+  ];
+
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
+  if (total === 0) {
+    return (
+      <div className="flex h-full items-center justify-center rounded-xl border bg-card p-6 shadow-sm">
+        <p className="text-sm text-muted-foreground">No cost data available.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border bg-card p-6 shadow-sm">
       <div className="mb-4">
         <h3 className="font-semibold">Cost by Provider</h3>
-        <p className="text-sm text-muted-foreground">Current month distribution</p>
+        <p className="text-sm text-muted-foreground">Last full month distribution</p>
       </div>
       <div className="h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -59,7 +71,7 @@ export function CostByProviderChart() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-muted-foreground">
-                {((item.value / total) * 100).toFixed(1)}%
+                {total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%
               </span>
               <span className="font-medium">{format(item.value)}</span>
             </div>

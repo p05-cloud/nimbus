@@ -4,40 +4,46 @@ import { DollarSign, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-reac
 import { formatPercentage } from '@/lib/utils';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
-const kpis = [
-  {
-    title: 'Total Spend (MTD)',
-    value: 47832.5,
-    change: -3.2,
-    icon: DollarSign,
-    trend: 'down' as const,
-  },
-  {
-    title: 'Forecasted Spend',
-    value: 92150.0,
-    change: 2.1,
-    icon: TrendingUp,
-    trend: 'up' as const,
-  },
-  {
-    title: 'Savings Identified',
-    value: 12450.0,
-    change: 15.4,
-    icon: TrendingDown,
-    trend: 'down' as const,
-  },
-  {
-    title: 'Active Anomalies',
-    value: 3,
-    change: 0,
-    icon: AlertTriangle,
-    trend: 'neutral' as const,
-    isCurrency: false,
-  },
-];
+interface KpiCardsProps {
+  totalSpendMTD: number;
+  forecastedSpend: number;
+  changePercentage: number;
+}
 
-export function KpiCards() {
+export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage }: KpiCardsProps) {
   const { format } = useCurrency();
+
+  const kpis = [
+    {
+      title: 'Total Spend (MTD)',
+      value: totalSpendMTD,
+      change: changePercentage,
+      icon: DollarSign,
+      trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
+    },
+    {
+      title: 'Forecasted Spend',
+      value: forecastedSpend,
+      change: 0,
+      icon: TrendingUp,
+      trend: 'neutral' as const,
+    },
+    {
+      title: 'Previous Month',
+      value: totalSpendMTD > 0 ? totalSpendMTD / (1 + changePercentage / 100) : 0,
+      change: 0,
+      icon: TrendingDown,
+      trend: 'neutral' as const,
+    },
+    {
+      title: 'Active Anomalies',
+      value: 0,
+      change: 0,
+      icon: AlertTriangle,
+      trend: 'neutral' as const,
+      isCurrency: false,
+    },
+  ];
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
