@@ -34,6 +34,7 @@ RUN pnpm --filter @nimbus/db exec prisma generate
 
 # Build the Next.js app
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DOCKER_BUILD=1
 RUN pnpm --filter @nimbus/web build
 
 # Stage 3: Production runner

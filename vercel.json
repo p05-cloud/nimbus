@@ -1,7 +1,0 @@
-{
-  "buildCommand": "pnpm turbo build --filter=@nimbus/web",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "rootDirectory": "apps/web"
-}
