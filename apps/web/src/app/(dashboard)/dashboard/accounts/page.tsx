@@ -1,4 +1,5 @@
-import { Cloud, Plus, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import Image from 'next/image';
+import { Plus, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { getDashboardData } from '@/lib/cloud/fetchDashboardData';
 
 export const metadata = { title: 'Cloud Accounts' };
@@ -7,17 +8,17 @@ export const dynamic = 'force-dynamic';
 const pendingProviders = [
   {
     name: 'Microsoft Azure',
-    color: 'bg-blue-500',
+    logo: '/images/azure-logo.webp',
     description: 'Azure Cost Management API integration for subscription-level cost tracking.',
   },
   {
     name: 'Google Cloud Platform',
-    color: 'bg-red-500',
+    logo: '/images/gcp-logo.webp',
     description: 'BigQuery billing export integration for project-level cost visibility.',
   },
   {
     name: 'Oracle Cloud Infrastructure',
-    color: 'bg-[#C74634]',
+    logo: '/images/oracle-logo.webp',
     description: 'OCI Cost Analysis API integration for tenancy-level cost tracking.',
   },
 ];
@@ -49,8 +50,14 @@ export default async function CloudAccountsPage() {
             <div className="rounded-xl border bg-card p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500">
-                    <Cloud className="h-5 w-5 text-white" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white dark:bg-white/10 border">
+                    <Image
+                      src="/images/aws-logo.webp"
+                      alt="AWS"
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold">ACC Digitalization</h3>
@@ -94,8 +101,14 @@ export default async function CloudAccountsPage() {
           <div key={provider.name} className="rounded-xl border bg-card p-6 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${provider.color}`}>
-                  <Cloud className="h-5 w-5 text-white" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white dark:bg-white/10 border">
+                  <Image
+                    src={provider.logo}
+                    alt={provider.name}
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                  />
                 </div>
                 <div>
                   <h3 className="font-semibold">{provider.name}</h3>
