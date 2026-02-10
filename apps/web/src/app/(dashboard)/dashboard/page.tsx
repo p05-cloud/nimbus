@@ -48,7 +48,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <TopServices services={data.topServices} />
-        <RecentRecommendations services={data.topServices} totalSpendMTD={data.totalSpendMTD} />
+        <RecentRecommendations />
       </div>
     </div>
   );

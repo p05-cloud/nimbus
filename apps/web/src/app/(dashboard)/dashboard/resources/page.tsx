@@ -1,13 +1,8 @@
-import { getDashboardData } from '@/lib/cloud/fetchDashboardData';
-import { Server, Cloud, AlertTriangle } from 'lucide-react';
+import { Server, Layers, ArrowRight } from 'lucide-react';
 
 export const metadata = { title: 'Resources' };
-export const dynamic = 'force-dynamic';
 
-export default async function ResourcesPage() {
-  const data = await getDashboardData();
-  const hasAccount = data.accountId && data.accountId !== 'not-connected';
-
+export default function ResourcesPage() {
   return (
     <div className="space-y-6 animate-in">
       <div>
@@ -17,76 +12,41 @@ export default async function ResourcesPage() {
         </p>
       </div>
 
-      {hasAccount ? (
-        <>
-          {/* Show services we know about from Cost Explorer */}
-          <div className="rounded-xl border bg-card shadow-sm">
-            <div className="p-6 pb-3">
-              <h3 className="font-semibold">Active Services (from Cost Explorer)</h3>
-              <p className="text-sm text-muted-foreground">
-                AWS Account {data.accountId} — {data.topServices.length} services with active spend
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="px-6 py-3 font-medium text-muted-foreground">Service</th>
-                    <th className="px-6 py-3 font-medium text-muted-foreground">Provider</th>
-                    <th className="px-6 py-3 font-medium text-muted-foreground">Region</th>
-                    <th className="px-6 py-3 font-medium text-muted-foreground">Status</th>
-                    <th className="px-6 py-3 text-right font-medium text-muted-foreground">Monthly Cost (MTD)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topServices.map((service) => (
-                    <tr key={service.name} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-2">
-                          <Cloud className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{service.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full bg-orange-500" />
-                          {service.provider}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 font-mono text-xs text-muted-foreground">us-east-1</td>
-                      <td className="px-6 py-3">
-                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          active
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right font-medium">
-                        ${service.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Individual resource inventory:</strong> Detailed per-resource tracking (EC2 instances, S3 buckets, RDS databases)
-              requires AWS Config or Resource Explorer integration. Currently showing service-level cost data from Cost Explorer.
-            </p>
-          </div>
-        </>
-      ) : (
-        <div className="flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
-          <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-          <div>
-            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">No accounts connected</p>
-            <p className="text-xs text-yellow-700 dark:text-yellow-300">
-              Connect a cloud account to discover and track resources.
-            </p>
-          </div>
+      <div className="flex flex-col items-center justify-center rounded-xl border bg-card p-16 text-center shadow-sm">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <Server className="h-8 w-8 text-primary" />
         </div>
-      )}
+        <h2 className="mt-6 text-xl font-semibold">Resource Inventory — Coming Soon</h2>
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+          Individual resource discovery requires AWS Config or AWS Resource Explorer integration.
+          This will provide per-resource cost attribution, tagging status, and idle resource detection.
+        </p>
+
+        <div className="mt-8 grid w-full max-w-lg gap-3">
+          {[
+            { label: 'AWS Config', description: 'Resource configuration tracking and compliance', status: 'Requires setup' },
+            { label: 'AWS Resource Explorer', description: 'Cross-region resource discovery', status: 'Requires setup' },
+            { label: 'Cost Allocation Tags', description: 'Tag-based cost attribution per resource', status: 'Requires setup' },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between rounded-lg border p-4 text-left">
+              <div className="flex items-center gap-3">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
+              </div>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {item.status}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 text-xs text-muted-foreground">
+          Meanwhile, service-level cost data is available on the <strong>Cost Explorer</strong> and <strong>Dashboard</strong> pages.
+        </p>
+      </div>
     </div>
   );
 }

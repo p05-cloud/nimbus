@@ -1,132 +1,51 @@
-import { Shield, CheckCircle, Clock, Lock, Tag, Server } from 'lucide-react';
-import { getDashboardData } from '@/lib/cloud/fetchDashboardData';
+import { Shield, Lock, Tag, Eye, FileCheck } from 'lucide-react';
 
 export const metadata = { title: 'Governance' };
-export const dynamic = 'force-dynamic';
 
-export default async function GovernancePage() {
-  const data = await getDashboardData();
-  const hasAccount = data.accountId && data.accountId !== 'not-connected';
-
-  // Define governance policies — these are aspirational checks
-  const policies = [
-    {
-      name: 'Cost Explorer Connected',
-      description: 'AWS Cost Explorer API is accessible and returning data',
-      status: hasAccount && data.totalSpendMTD > 0 ? 'pass' : 'fail',
-      icon: CheckCircle,
-    },
-    {
-      name: 'CUR Report Configured',
-      description: 'Daily Cost and Usage Report is set up in S3 for detailed billing',
-      status: hasAccount ? 'pass' : 'fail',
-      icon: Clock,
-    },
-    {
-      name: 'IAM Least Privilege',
-      description: 'Nimbus uses read-only IAM credentials (ce:*, sts:GetCallerIdentity)',
-      status: hasAccount ? 'pass' : 'pending',
-      icon: Lock,
-    },
-    {
-      name: 'Budget Alerts',
-      description: 'AWS Budgets with SNS email alerts configured for overspend notifications',
-      status: 'pending',
-      icon: Shield,
-    },
-    {
-      name: 'Tagging Compliance',
-      description: 'All resources tagged with cost-center, environment, and team tags',
-      status: 'pending',
-      icon: Tag,
-    },
-    {
-      name: 'Compute Optimizer',
-      description: 'AWS Compute Optimizer enabled for rightsizing recommendations',
-      status: hasAccount ? 'pass' : 'pending',
-      icon: Server,
-    },
-  ];
-
-  const passCount = policies.filter((p) => p.status === 'pass').length;
-  const pendingCount = policies.filter((p) => p.status === 'pending').length;
-  const failCount = policies.filter((p) => p.status === 'fail').length;
-
-  const statusStyles = {
-    pass: {
-      badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      icon: 'text-green-500',
-      label: 'Compliant',
-    },
-    pending: {
-      badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-      icon: 'text-yellow-500',
-      label: 'Pending',
-    },
-    fail: {
-      badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-      icon: 'text-red-500',
-      label: 'Action Required',
-    },
-  };
-
+export default function GovernancePage() {
   return (
     <div className="space-y-6 animate-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Governance</h1>
-          <p className="text-sm text-muted-foreground">
-            FinOps readiness checklist and compliance status
-            {hasAccount ? ` — AWS Account ${data.accountId}` : ''}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Governance</h1>
+        <p className="text-sm text-muted-foreground">
+          Policy compliance, tagging rules, and cost governance.
+        </p>
       </div>
 
-      {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Compliant</p>
-          <p className="mt-1 text-3xl font-bold text-green-600 dark:text-green-400">{passCount}/{policies.length}</p>
+      <div className="flex flex-col items-center justify-center rounded-xl border bg-card p-16 text-center shadow-sm">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <Shield className="h-8 w-8 text-primary" />
         </div>
-        <div className="rounded-xl border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Pending Setup</p>
-          <p className="mt-1 text-3xl font-bold text-yellow-600 dark:text-yellow-400">{pendingCount}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Action Required</p>
-          <p className="mt-1 text-3xl font-bold text-red-600 dark:text-red-400">{failCount}</p>
-        </div>
-      </div>
+        <h2 className="mt-6 text-xl font-semibold">Governance & Compliance — Coming Soon</h2>
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+          Automated policy enforcement requires AWS Config Rules integration.
+          This will enable tagging compliance, security posture checks, and cost governance policies.
+        </p>
 
-      {/* Policy checklist */}
-      <div className="space-y-3">
-        {policies.map((policy) => {
-          const style = statusStyles[policy.status as keyof typeof statusStyles];
-          const Icon = policy.icon;
-          return (
-            <div key={policy.name} className="rounded-xl border bg-card p-5 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <Icon className={`mt-0.5 h-5 w-5 ${style.icon}`} />
-                  <div>
-                    <h3 className="font-semibold">{policy.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{policy.description}</p>
-                  </div>
+        <div className="mt-8 grid w-full max-w-lg gap-3">
+          {[
+            { icon: Tag, label: 'Tagging Compliance', description: 'Enforce cost-center, environment, and team tags on all resources' },
+            { icon: Lock, label: 'Security Policies', description: 'No public S3 buckets, encryption at rest, IAM best practices' },
+            { icon: Eye, label: 'Cost Guardrails', description: 'Max instance sizes, spending limits, and auto-remediation' },
+            { icon: FileCheck, label: 'Audit Reports', description: 'Compliance reports for BFSI regulatory requirements' },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between rounded-lg border p-4 text-left">
+              <div className="flex items-center gap-3">
+                <item.icon className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>
-                  {style.label}
-                </span>
               </div>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                Planned
+              </span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Next steps:</strong> Enable AWS Config rules for deeper compliance checks including
-          tagging enforcement, encryption validation, and public access controls.
-          These integrate with Nimbus for automated policy monitoring.
+        <p className="mt-6 text-xs text-muted-foreground">
+          Requires AWS Config Rules. Setup instructions will be provided when this feature is enabled.
         </p>
       </div>
     </div>
