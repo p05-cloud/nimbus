@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { sampleCostData, buildCostContextPrompt } from '@/lib/ai/cost-context';
+import { type CostSummary, buildCostContextPrompt } from '@/lib/ai/cost-context';
 import { generateLocalResponse } from '@/lib/ai/local-engine';
+import { getDashboardData } from '@/lib/cloud/fetchDashboardData';
 import { z } from 'zod';
 
 const requestSchema = z.object({
@@ -16,6 +17,25 @@ const requestSchema = z.object({
     .max(20)
     .optional(),
 });
+
+/** Build a CostSummary from live AWS dashboard data */
+async function buildLiveCostSummary(): Promise<CostSummary> {
+  const data = await getDashboardData();
+
+  return {
+    totalSpendMTD: data.totalSpendMTD,
+    forecastedSpend: data.forecastedSpend,
+    savingsIdentified: 0,
+    activeAnomalies: 0,
+    providers: [
+      { name: 'AWS', spend: data.totalSpendMTD, change: data.changePercentage },
+    ],
+    topServices: data.topServices,
+    budgets: [],
+    recommendations: [],
+    anomalies: [],
+  };
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -34,12 +54,15 @@ export async function POST(req: NextRequest) {
 
   const { message } = parsed.data;
 
+  // Get live cost data (cached, so no extra API calls)
+  const costData = await buildLiveCostSummary();
+
   // If an AI API key is configured, use external LLM
   const aiApiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
 
   if (aiApiKey && process.env.ANTHROPIC_API_KEY) {
     try {
-      const systemPrompt = buildCostContextPrompt(sampleCostData);
+      const systemPrompt = buildCostContextPrompt(costData);
       const messages = [
         ...(parsed.data.history || []).map((m) => ({
           role: m.role as 'user' | 'assistant',
@@ -76,7 +99,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Local smart engine (no API key needed)
-  const reply = generateLocalResponse(message, sampleCostData);
+  const reply = generateLocalResponse(message, costData);
   return NextResponse.json({
     message: reply,
     source: 'local',

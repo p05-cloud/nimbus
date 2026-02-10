@@ -71,22 +71,20 @@ export function Sidebar({ onOpenChat }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex h-14 items-center border-b px-3">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image
-              src="/images/pfl-logo.png"
-              alt="Poonawalla Fincorp"
-              width={32}
-              height={32}
-              className="h-8 w-8 shrink-0 rounded-lg object-contain"
-            />
-            <span
-              className={cn(
-                'text-lg font-semibold tracking-tight transition-all duration-300',
-                expanded ? 'w-auto opacity-100' : 'w-0 overflow-hidden opacity-0',
-              )}
-            >
-              Nimbus
-            </span>
+          <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
+            {expanded ? (
+              <Image
+                src="/images/pfl-logo.png"
+                alt="Poonawalla Fincorp"
+                width={160}
+                height={40}
+                className="h-9 w-auto shrink-0 object-contain"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1B2A5B]">
+                <span className="text-sm font-bold text-white">P</span>
+              </div>
+            )}
           </Link>
         </div>
 
