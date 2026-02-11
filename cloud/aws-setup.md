@@ -1,6 +1,6 @@
 # AWS Setup Guide — Nimbus FinOps Platform
 
-> Pre-requisites and setup steps for connecting an AWS account to Nimbus.
+> Pre-requisites and setup steps for connecting AWS accounts to Nimbus.
 > Follow this guide for each new client onboarding (e.g., PFL, ACC, etc.)
 
 ---
@@ -15,7 +15,56 @@
 | Rightsizing recommendations | Compute Optimizer | Free | `compute-optimizer:Get*Recommendations` |
 | Compliance/governance | AWS Config | ~$2-3/mo | `config:Describe*`, `config:Get*` |
 
-**Total estimated AWS cost: ~$3-6/month** (mostly Config; without Config it's under $1/mo).
+**Total estimated AWS cost: ~$5-25/month** for multi-account (mostly Cost Explorer API calls + Config).
+
+---
+
+## 1.1 Multi-Account Architecture
+
+Most enterprise clients (like PFL) use **AWS Organizations** with multiple accounts:
+
+```
+AWS Organizations (Management/Payer Account)
+├── OU: Production
+│   ├── Account: Client-Prod (workloads)
+│   ├── Account: Client-Prod-Data (databases)
+│   └── Account: Client-DR (disaster recovery)
+├── OU: Non-Production
+│   ├── Account: Client-Dev
+│   ├── Account: Client-Staging
+│   └── Account: Client-QA
+├── OU: Security
+│   └── Account: Client-Security (CloudTrail, GuardDuty)
+└── OU: Shared Services
+    └── Account: Client-Shared (networking, DNS)
+```
+
+### Key Principle: 1 Credential = All Accounts
+
+**The Cost Explorer API called from the management (payer) account automatically sees ALL linked member accounts.** No need to create IAM users/roles in every account.
+
+```
+Management Account credential → Cost Explorer API → sees all 10-50+ accounts
+```
+
+The only difference in the API call is adding a `GroupBy` dimension:
+```
+GroupBy: [{ Type: "DIMENSION", Key: "LINKED_ACCOUNT" }]
+```
+
+### Three Approaches to Multi-Account Cost Data
+
+| Approach | Best For | Credentials | Granularity |
+|----------|---------|-------------|-------------|
+| **Cost Explorer API (current)** | Real-time dashboards, <50 accounts | 1 (management account) | Service-level, daily |
+| **CUR 2.0 (S3 export)** | Deep analytics, >50 accounts | 1 (management account) | Resource-level line items |
+| **Cross-account IAM roles** | Resource-level APIs (CloudWatch, tags) | 1 per account | Instance-level metrics |
+
+**Nimbus currently uses Approach 1.** For PFL at scale, we'll add CUR 2.0 ingestion.
+
+### For Multi-Account Setup
+
+Create the IAM user in the **management (payer) account**, not in individual member accounts. The Cost Explorer API will automatically aggregate all linked accounts.
 
 ---
 
@@ -315,7 +364,121 @@ For a different region, update the region values in `apps/web/src/lib/cloud/`:
 
 ---
 
-## 8. Cost Optimization Tips
+## 8. Multi-Account Setup (AWS Organizations)
+
+If the client uses AWS Organizations with multiple linked accounts:
+
+### 8.1 Where to Create the IAM User
+
+**Always create in the management (payer) account.** This is the account that owns the AWS Organization and receives the consolidated bill.
+
+To identify the management account:
+```bash
+aws organizations describe-organization --query 'Organization.MasterAccountId'
+```
+
+### 8.2 Cost Explorer — Multi-Account Queries
+
+The same Cost Explorer API permissions work for all linked accounts. To break down costs per account:
+
+```bash
+# Get cost by linked account
+aws ce get-cost-and-usage \
+  --time-period Start=2025-02-01,End=2025-02-28 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=LINKED_ACCOUNT
+```
+
+### 8.3 Resource Explorer — Multi-Account
+
+Resource Explorer is per-account. For multi-account resource visibility:
+
+**Option A: Aggregator index (recommended)**
+1. Enable Resource Explorer in each member account
+2. Create an AGGREGATOR index in one account (e.g., management account)
+3. This aggregates resources from all accounts in the Organization
+
+```bash
+# In management account — create aggregator
+aws resource-explorer-2 create-index --type AGGREGATOR --region ap-south-1
+
+# In each member account — create local index
+aws resource-explorer-2 create-index --type LOCAL --region ap-south-1
+```
+
+**Option B: Cross-account IAM roles**
+Deploy a `NimbusReadOnly` role in each member account via CloudFormation StackSets, then assume-role into each account.
+
+### 8.4 Compute Optimizer — Multi-Account
+
+Enable Compute Optimizer at the Organization level from the management account:
+
+```bash
+# Opt in the entire organization
+aws compute-optimizer update-enrollment-status \
+  --status Active \
+  --include-member-accounts
+```
+
+Then use organization-level API calls:
+```bash
+aws compute-optimizer get-ec2-instance-recommendations \
+  --account-ids 111111111111 222222222222 333333333333
+```
+
+### 8.5 AWS Config — Multi-Account
+
+Use AWS Config Aggregator for multi-account compliance:
+
+```bash
+# Create an aggregator in the management account
+aws configservice put-configuration-aggregator \
+  --configuration-aggregator-name NimbusAggregator \
+  --organization-aggregation-source RoleArn=arn:aws:iam::<MGMT_ACCOUNT>:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig,AllAwsRegions=true
+```
+
+### 8.6 CUR 2.0 (For Scale — Optional)
+
+For clients with 50+ accounts or need resource-level line items, enable CUR 2.0:
+
+```bash
+# Enable CUR 2.0 export to S3 (from management account)
+aws bcm-data-exports create-export \
+  --export '{
+    "Name": "nimbus-cur",
+    "DataQuery": {
+      "QueryStatement": "SELECT * FROM COST_AND_USAGE_REPORT",
+      "TableConfigurations": {
+        "COST_AND_USAGE_REPORT": {
+          "TIME_GRANULARITY": "DAILY",
+          "INCLUDE_RESOURCES": "TRUE"
+        }
+      }
+    },
+    "DestinationConfigurations": {
+      "S3Destination": {
+        "S3Bucket": "nimbus-cur-<ACCOUNT_ID>",
+        "S3Region": "ap-south-1",
+        "S3OutputConfigurations": {
+          "OutputType": "CUSTOM",
+          "Format": "PARQUET",
+          "Compression": "PARQUET",
+          "Overwrite": "OVERWRITE_REPORT"
+        }
+      }
+    },
+    "RefreshCadence": {"Frequency": "SYNCHRONOUS"}
+  }'
+```
+
+CUR 2.0 supports FOCUS schema natively and includes resource-level data for all linked accounts.
+
+**Cost:** Free (only S3 storage ~$0.02/GB/month, typically 1-10 GB for 10-50 accounts).
+
+---
+
+## 9. Cost Optimization Tips
 
 1. **Don't enable AWS Config** unless the client specifically needs governance/compliance. It's the only paid service (~$2-3/mo).
 2. **Caching** — Nimbus caches all API responses (5-15 min). This means ~300-500 API calls/month instead of thousands.
