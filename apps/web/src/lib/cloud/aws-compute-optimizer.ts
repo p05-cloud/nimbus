@@ -153,6 +153,7 @@ export async function fetchComputeOptimizerRecommendations(): Promise<ComputeOpt
 
   const client = createClient();
   const allRecs: OptimizationRecommendation[] = [];
+  let totalResourcesScanned = 0;
 
   try {
     // Fetch all 4 resource types in parallel
@@ -163,72 +164,70 @@ export async function fetchComputeOptimizerRecommendations(): Promise<ComputeOpt
       client.send(new GetEBSVolumeRecommendationsCommand({})),
     ]);
 
-    // Process EC2
+    // Count ALL resources before filtering (to detect "active but all optimized" vs "collecting")
     if (ec2Res.status === 'fulfilled') {
-      for (const r of ec2Res.value.instanceRecommendations || []) {
+      const resources = ec2Res.value.instanceRecommendations || [];
+      totalResourcesScanned += resources.length;
+      for (const r of resources) {
         const mapped = mapEC2(r);
         if (mapped) allRecs.push(mapped);
       }
     }
 
-    // Process Auto Scaling Groups
     if (asgRes.status === 'fulfilled') {
-      for (const r of asgRes.value.autoScalingGroupRecommendations || []) {
+      const resources = asgRes.value.autoScalingGroupRecommendations || [];
+      totalResourcesScanned += resources.length;
+      for (const r of resources) {
         const mapped = mapAutoScaling(r);
         if (mapped) allRecs.push(mapped);
       }
     }
 
-    // Process Lambda
     if (lambdaRes.status === 'fulfilled') {
-      for (const r of lambdaRes.value.lambdaFunctionRecommendations || []) {
+      const resources = lambdaRes.value.lambdaFunctionRecommendations || [];
+      totalResourcesScanned += resources.length;
+      for (const r of resources) {
         const mapped = mapLambda(r);
         if (mapped) allRecs.push(mapped);
       }
     }
 
-    // Process EBS
     if (ebsRes.status === 'fulfilled') {
-      for (const r of ebsRes.value.volumeRecommendations || []) {
+      const resources = ebsRes.value.volumeRecommendations || [];
+      totalResourcesScanned += resources.length;
+      for (const r of resources) {
         const mapped = mapEBS(r);
         if (mapped) allRecs.push(mapped);
       }
     }
 
-    // Check if all failed — might mean Compute Optimizer isn't enrolled yet
+    // Check if ALL calls failed
     const allFailed = [ec2Res, asgRes, lambdaRes, ebsRes].every((r) => r.status === 'rejected');
     if (allFailed) {
       const firstError = (ec2Res as PromiseRejectedResult).reason;
-      const errorMsg = firstError?.message || 'Unknown error';
+      const errorMsg = firstError?.message || firstError?.name || 'Unknown error';
 
-      // Check for specific "not opted in" error
-      if (errorMsg.includes('OptInRequired') || errorMsg.includes('not opted in')) {
+      if (errorMsg.includes('OptInRequired') || errorMsg.includes('not opted in') || errorMsg.includes('You are not opted in')) {
         return {
-          recommendations: [],
-          totalEstimatedSavings: 0,
-          byType: [],
+          recommendations: [], totalEstimatedSavings: 0, byType: [],
           optimizerStatus: 'not-enrolled',
           errorMessage: 'AWS Compute Optimizer is not enabled. Enable it from the AWS Console.',
         };
       }
 
-      // Check for "still collecting data" scenario
-      if (errorMsg.includes('InternalServerException') || allRecs.length === 0) {
-        return {
-          recommendations: [],
-          totalEstimatedSavings: 0,
-          byType: [],
-          optimizerStatus: 'collecting',
-          errorMessage: 'Compute Optimizer is collecting utilization data. Results will be available after ~14 days.',
-        };
-      }
-
       return {
-        recommendations: [],
-        totalEstimatedSavings: 0,
-        byType: [],
+        recommendations: [], totalEstimatedSavings: 0, byType: [],
         optimizerStatus: 'error',
         errorMessage: errorMsg,
+      };
+    }
+
+    // If some calls succeeded but returned zero resources total — still collecting
+    if (totalResourcesScanned === 0) {
+      return {
+        recommendations: [], totalEstimatedSavings: 0, byType: [],
+        optimizerStatus: 'collecting',
+        errorMessage: 'Compute Optimizer is collecting utilization data. Results will be available after ~14 days.',
       };
     }
 
@@ -264,18 +263,17 @@ export async function fetchComputeOptimizerRecommendations(): Promise<ComputeOpt
 
     if (msg.includes('OptInRequired') || msg.includes('not opted in')) {
       return {
-        recommendations: [],
-        totalEstimatedSavings: 0,
-        byType: [],
+        recommendations: [], totalEstimatedSavings: 0, byType: [],
         optimizerStatus: 'not-enrolled',
         errorMessage: 'AWS Compute Optimizer is not enabled.',
       };
     }
 
+    // Return stale cache if available
+    if (cachedData) return cachedData;
+
     return {
-      recommendations: [],
-      totalEstimatedSavings: 0,
-      byType: [],
+      recommendations: [], totalEstimatedSavings: 0, byType: [],
       optimizerStatus: 'error',
       errorMessage: msg,
     };

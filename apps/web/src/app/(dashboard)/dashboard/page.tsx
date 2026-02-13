@@ -8,6 +8,10 @@ import { BudgetForecastCard } from './components/BudgetForecastCard';
 import { BurnRateCard } from './components/BurnRateCard';
 import { CostSpikePanel } from './components/CostSpikePanel';
 import { OptimizationTracking } from './components/OptimizationTracking';
+import { DataTransferCard } from './components/DataTransferCard';
+import { CommitmentCoverageCard } from './components/CommitmentCoverageCard';
+import { ServiceHealthIndicators } from './components/ServiceHealthIndicators';
+import { FinOpsMaturityScorecard } from './components/FinOpsMaturityScorecard';
 import { AlertTriangle } from 'lucide-react';
 
 export const metadata = { title: 'Dashboard' };
@@ -56,6 +60,15 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* Commitment Coverage + Data Transfer */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <CommitmentCoverageCard commitment={data.commitment} />
+        <DataTransferCard
+          dataTransfer={data.dataTransfer}
+          totalSpendMTD={data.totalSpendMTD}
+        />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">
           <CostTrendChart monthlyCosts={data.monthlyCosts} />
@@ -72,6 +85,14 @@ export default async function DashboardPage() {
         previousMonthTotal={data.previousMonthTotal}
       />
 
+      {/* Service Health Indicators */}
+      <ServiceHealthIndicators
+        services={data.topServices}
+        totalSpendMTD={data.totalSpendMTD}
+        optimizerByType={data.optimizerByType}
+        optimizerStatus={data.optimizerStatus}
+      />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <TopServices services={data.topServices} />
         <RecentRecommendations services={data.topServices} totalSpendMTD={data.totalSpendMTD} />
@@ -82,6 +103,20 @@ export default async function DashboardPage() {
         services={data.topServices}
         totalSpendMTD={data.totalSpendMTD}
         previousMonthTotal={data.previousMonthTotal}
+        optimizerSavings={data.optimizerSavings}
+        optimizerByType={data.optimizerByType}
+        optimizerStatus={data.optimizerStatus}
+      />
+
+      {/* FinOps Maturity Scorecard */}
+      <FinOpsMaturityScorecard
+        hasForecasting={data.forecastedSpend > 0}
+        hasBudgetTracking={data.previousMonthTotal > 0}
+        hasOptimizationTracking={data.optimizerStatus === 'active'}
+        hasCostAllocation={data.topServices.length > 3}
+        hasAnomalyDetection={data.topServices.some((s) => s.change > 50)}
+        commitmentCoveragePercent={data.commitment.savingsPlansCoveragePercent}
+        dataTransferVisible={data.dataTransfer.length > 0}
       />
     </div>
   );

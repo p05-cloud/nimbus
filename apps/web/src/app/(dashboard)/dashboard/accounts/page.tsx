@@ -60,7 +60,7 @@ export default async function CloudAccountsPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold">ACC Digitalization</h3>
+                    <h3 className="font-semibold">AWS Account {data.accountId}</h3>
                     <p className="text-xs text-muted-foreground">Amazon Web Services</p>
                   </div>
                 </div>

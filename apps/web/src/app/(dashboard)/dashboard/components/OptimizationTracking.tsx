@@ -7,6 +7,9 @@ interface OptimizationTrackingProps {
   services: { name: string; provider: string; cost: number; change: number }[];
   totalSpendMTD: number;
   previousMonthTotal: number;
+  optimizerSavings: number;
+  optimizerByType: { type: string; count: number; savings: number }[];
+  optimizerStatus: string;
 }
 
 interface SavingsCategory {
@@ -20,6 +23,9 @@ export function OptimizationTracking({
   services,
   totalSpendMTD,
   previousMonthTotal,
+  optimizerSavings,
+  optimizerByType,
+  optimizerStatus,
 }: OptimizationTrackingProps) {
   const { format } = useCurrency();
 
@@ -35,8 +41,12 @@ export function OptimizationTracking({
   );
   const spikingServices = services.filter((s) => s.change > 25);
 
+  // Use real Compute Optimizer data for rightsizing when available,
+  // otherwise fall back to 15% heuristic
   const rightsizingSavings =
-    computeServices.reduce((sum, s) => sum + s.cost, 0) * 0.15;
+    optimizerStatus === 'active' && optimizerSavings > 0
+      ? optimizerSavings
+      : computeServices.reduce((sum, s) => sum + s.cost, 0) * 0.15;
   const savingsPlanSavings =
     stableWorkloads.reduce((sum, s) => sum + s.cost, 0) * 0.3;
   const storageSavings =
@@ -46,7 +56,9 @@ export function OptimizationTracking({
 
   const categories: SavingsCategory[] = [
     {
-      label: 'Rightsizing',
+      label: optimizerStatus === 'active' && optimizerSavings > 0
+        ? 'Rightsizing (CO)'
+        : 'Rightsizing (est.)',
       color: 'bg-blue-500',
       dotColor: 'bg-blue-500',
       savings: rightsizingSavings,
