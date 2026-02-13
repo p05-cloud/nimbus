@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, Calculator } from 'lucide-react';
 import { formatPercentage } from '@/lib/utils';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
@@ -8,40 +8,45 @@ interface KpiCardsProps {
   totalSpendMTD: number;
   forecastedSpend: number;
   changePercentage: number;
+  previousMonthTotal: number;
 }
 
-export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage }: KpiCardsProps) {
+export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage, previousMonthTotal }: KpiCardsProps) {
   const { format } = useCurrency();
+
+  // Separate cloud usage from tax (18% GST for India)
+  const taxRate = 0.18;
+  const cloudSpend = totalSpendMTD / (1 + taxRate);
+  const tax = totalSpendMTD - cloudSpend;
 
   const kpis = [
     {
-      title: 'Total Spend (MTD)',
-      value: totalSpendMTD,
+      title: 'Cloud Usage (MTD)',
+      value: cloudSpend,
       change: changePercentage,
       icon: DollarSign,
       trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
     },
     {
-      title: 'Forecasted Spend',
+      title: 'Tax (GST 18%)',
+      value: tax,
+      change: 0,
+      icon: Receipt,
+      trend: 'neutral' as const,
+    },
+    {
+      title: 'Total Spend (MTD)',
+      value: totalSpendMTD,
+      change: changePercentage,
+      icon: Calculator,
+      trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
+    },
+    {
+      title: 'Forecasted (EOM)',
       value: forecastedSpend,
       change: 0,
       icon: TrendingUp,
       trend: 'neutral' as const,
-    },
-    {
-      title: 'Previous Month',
-      value: totalSpendMTD > 0 ? totalSpendMTD / (1 + changePercentage / 100) : 0,
-      change: 0,
-      icon: TrendingDown,
-      trend: 'neutral' as const,
-    },
-    {
-      title: 'Active Anomalies',
-      value: 0,
-      change: 0,
-      icon: AlertTriangle,
-      trend: 'neutral' as const,
-      isCurrency: false,
     },
   ];
 
@@ -55,7 +60,7 @@ export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage }: K
           </div>
           <div className="mt-2">
             <p className="text-2xl font-bold">
-              {kpi.isCurrency === false ? kpi.value : format(kpi.value)}
+              {format(kpi.value)}
             </p>
             {kpi.change !== 0 && (
               <p

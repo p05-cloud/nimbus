@@ -4,6 +4,10 @@ import { CostTrendChart } from './components/CostTrendChart';
 import { CostByProviderChart } from './components/CostByProviderChart';
 import { TopServices } from './components/TopServices';
 import { RecentRecommendations } from './components/RecentRecommendations';
+import { BudgetForecastCard } from './components/BudgetForecastCard';
+import { BurnRateCard } from './components/BurnRateCard';
+import { CostSpikePanel } from './components/CostSpikePanel';
+import { OptimizationTracking } from './components/OptimizationTracking';
 import { AlertTriangle } from 'lucide-react';
 
 export const metadata = { title: 'Dashboard' };
@@ -35,7 +39,22 @@ export default async function DashboardPage() {
         totalSpendMTD={data.totalSpendMTD}
         forecastedSpend={data.forecastedSpend}
         changePercentage={data.changePercentage}
+        previousMonthTotal={data.previousMonthTotal}
       />
+
+      {/* Budget vs Forecast + Burn Rate */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <BudgetForecastCard
+          totalSpendMTD={data.totalSpendMTD}
+          forecastedSpend={data.forecastedSpend}
+          previousMonthTotal={data.previousMonthTotal}
+        />
+        <BurnRateCard
+          totalSpendMTD={data.totalSpendMTD}
+          forecastedSpend={data.forecastedSpend}
+          previousMonthTotal={data.previousMonthTotal}
+        />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">
@@ -46,10 +65,24 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Cost Spike Analysis */}
+      <CostSpikePanel
+        services={data.topServices}
+        totalSpendMTD={data.totalSpendMTD}
+        previousMonthTotal={data.previousMonthTotal}
+      />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <TopServices services={data.topServices} />
         <RecentRecommendations services={data.topServices} totalSpendMTD={data.totalSpendMTD} />
       </div>
+
+      {/* Optimization Savings Tracking */}
+      <OptimizationTracking
+        services={data.topServices}
+        totalSpendMTD={data.totalSpendMTD}
+        previousMonthTotal={data.previousMonthTotal}
+      />
     </div>
   );
 }
