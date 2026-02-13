@@ -14,6 +14,7 @@ interface CloudResource {
 
 interface ResourcesClientProps {
   totalCount: number;
+  capped?: boolean;
   byService: { service: string; count: number }[];
   byRegion: { region: string; count: number }[];
   resources: CloudResource[];
@@ -69,11 +70,13 @@ function getServiceColor(index: number): string {
 
 export function ResourcesClient({
   totalCount,
+  capped,
   byService,
   byRegion,
   resources,
   error,
 }: ResourcesClientProps) {
+  const countDisplay = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString();
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function ResourcesClient({
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Resources</h1>
         <p className="text-sm text-muted-foreground">
-          {totalCount.toLocaleString()} resources discovered via AWS Resource Explorer
+          {countDisplay} resources discovered via AWS Resource Explorer
         </p>
       </div>
 
@@ -138,7 +141,7 @@ export function ResourcesClient({
             <p className="text-sm font-medium text-muted-foreground">Total Resources</p>
             <Package className="h-4 w-4 text-muted-foreground" />
           </div>
-          <p className="mt-2 text-2xl font-bold">{totalCount.toLocaleString()}</p>
+          <p className="mt-2 text-2xl font-bold">{countDisplay}</p>
         </div>
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between">

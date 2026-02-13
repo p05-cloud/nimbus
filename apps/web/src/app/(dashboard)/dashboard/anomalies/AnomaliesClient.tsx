@@ -34,7 +34,7 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
   }
 
   // Detect anomalies from real MoM change data
-  // Services with >20% increase are flagged as anomalies
+  // Services with >20% increase are flagged as cost spikes
   const spikingServices = topServices
     .filter((s) => s.change > 20)
     .sort((a, b) => b.change - a.change)
@@ -49,7 +49,7 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
       status: 'open' as const,
     }));
 
-  // Services with significant decrease (might indicate issues too)
+  // Services with >30% decrease are flagged as significant drops
   const droppingServices = topServices
     .filter((s) => s.change < -30 && s.cost > 1)
     .sort((a, b) => a.change - b.change)
@@ -65,7 +65,6 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
     }));
 
   const allAnomalies = [...spikingServices, ...droppingServices];
-  const openCount = spikingServices.length;
   const totalImpact = spikingServices.reduce((sum, a) => sum + a.impact, 0);
 
   return (
@@ -77,16 +76,35 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Cost Spikes Detected</p>
-          <p className={`mt-1 text-3xl font-bold ${openCount > 0 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
-            {openCount}
+          <p className="text-sm text-muted-foreground">Total Anomalies</p>
+          <p className={`mt-1 text-3xl font-bold ${allAnomalies.length > 0 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
+            {allAnomalies.length}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Estimated Excess Cost</p>
-          <p className="mt-1 text-3xl font-bold">{format(totalImpact)}</p>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Cost Spikes</p>
+          </div>
+          <p className={`mt-1 text-3xl font-bold ${spikingServices.length > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {spikingServices.length}
+          </p>
+          {spikingServices.length > 0 && totalImpact > 0 && (
+            <p className="mt-1 text-xs text-destructive">
+              ~{format(totalImpact)} excess cost
+            </p>
+          )}
+        </div>
+        <div className="rounded-xl border bg-card p-6">
+          <div className="flex items-center gap-2">
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Cost Drops</p>
+          </div>
+          <p className={`mt-1 text-3xl font-bold ${droppingServices.length > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+            {droppingServices.length}
+          </p>
         </div>
         <div className="rounded-xl border bg-card p-6">
           <p className="text-sm text-muted-foreground">Services Monitored</p>
@@ -100,7 +118,7 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
           <p className="mt-4 font-semibold text-green-700 dark:text-green-300">All Clear</p>
           <p className="mt-2 text-sm text-muted-foreground">
             No unusual spending patterns detected. All {topServices.length} monitored services
-            are within normal range (&lt;20% MoM change).
+            are within normal range (less than 20% increase, less than 30% decrease).
           </p>
         </div>
       ) : (
@@ -137,7 +155,7 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
                         : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     }`}
                   >
-                    {anomaly.status === 'open' ? 'spike' : 'info'}
+                    {anomaly.status === 'open' ? 'spike' : 'drop'}
                   </span>
                 </div>
               </div>
@@ -148,7 +166,8 @@ export function AnomaliesClient({ topServices, totalSpendMTD, accountId, error }
 
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Detection method:</strong> Services with &gt;20% month-over-month cost increase are flagged as anomalies.
+          <strong>Detection method:</strong> Services with &gt;20% month-over-month cost increase
+          are flagged as cost spikes. Services with &gt;30% decrease are flagged as significant drops.
           AWS Cost Anomaly Detection has been enabled for more granular, ML-based anomaly detection with SNS alerts.
         </p>
       </div>

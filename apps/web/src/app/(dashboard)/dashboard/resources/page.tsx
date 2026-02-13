@@ -22,6 +22,7 @@ export default async function ResourcesPage() {
   return (
     <ResourcesClient
       totalCount={resources?.totalCount ?? 0}
+      capped={resources?.capped ?? false}
       byService={resources?.byService ?? []}
       byRegion={resources?.byRegion ?? []}
       resources={resources?.resources ?? []}

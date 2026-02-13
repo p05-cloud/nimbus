@@ -177,6 +177,40 @@ export async function fetchAwsConfigCompliance(): Promise<GovernanceSummary> {
   }
 }
 
+// --- Non-Compliant Resource Drill-Down ----------------------------------------
+
+export interface NonCompliantResource {
+  resourceId: string;
+  resourceType: string;
+  complianceType: string;
+}
+
+export async function fetchNonCompliantResources(
+  ruleName: string,
+): Promise<NonCompliantResource[]> {
+  const client = createClient();
+
+  try {
+    const response = await client.send(
+      new GetComplianceDetailsByConfigRuleCommand({
+        ConfigRuleName: ruleName,
+        ComplianceTypes: ['NON_COMPLIANT'],
+        Limit: 100,
+      }),
+    );
+
+    const results = response.EvaluationResults || [];
+    return results.map((r) => ({
+      resourceId: r.EvaluationResultIdentifier?.EvaluationResultQualifier?.ResourceId || 'unknown',
+      resourceType: r.EvaluationResultIdentifier?.EvaluationResultQualifier?.ResourceType || 'unknown',
+      complianceType: r.ComplianceType || 'NON_COMPLIANT',
+    }));
+  } catch (error) {
+    console.error(`[Governance] Failed to fetch non-compliant resources for ${ruleName}:`, error);
+    return [];
+  }
+}
+
 // --- Helper: Friendly rule descriptions for AWS managed rules ----------------
 
 function ruleDescription(ruleName: string): string {

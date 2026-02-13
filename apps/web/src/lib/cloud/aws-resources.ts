@@ -17,6 +17,7 @@ export interface CloudResource {
 
 export interface ResourceSummary {
   totalCount: number;
+  capped: boolean; // true if we hit the page limit and more resources exist
   byService: { service: string; count: number }[];
   byRegion: { region: string; count: number }[];
   resources: CloudResource[];
@@ -82,7 +83,9 @@ export async function fetchAwsResources(): Promise<ResourceSummary> {
   const allResources: CloudResource[] = [];
   let nextToken: string | undefined;
 
-  // Paginate through results (max 3 pages = ~3000 resources to keep API calls low)
+  // Paginate through all results. Safety limit of 20 pages (20,000 resources)
+  // to prevent infinite loops or runaway API costs. If more resources exist
+  // beyond the cap, the `capped` flag will be set on the returned summary.
   let pages = 0;
   do {
     const command = new SearchCommand({
@@ -99,7 +102,10 @@ export async function fetchAwsResources(): Promise<ResourceSummary> {
 
     nextToken = response.NextToken;
     pages++;
-  } while (nextToken && pages < 3);
+  } while (nextToken && pages < 20);
+
+  // If nextToken is still defined after the loop, we hit the safety cap
+  const capped = nextToken !== undefined;
 
   // Aggregate by service
   const serviceMap = new Map<string, number>();
@@ -121,6 +127,7 @@ export async function fetchAwsResources(): Promise<ResourceSummary> {
 
   const summary: ResourceSummary = {
     totalCount: allResources.length,
+    capped,
     byService,
     byRegion,
     resources: allResources,

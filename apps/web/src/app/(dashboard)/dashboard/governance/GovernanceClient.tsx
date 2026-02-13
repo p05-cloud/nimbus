@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Shield, ShieldCheck, ShieldAlert, ShieldX,
   CheckCircle, XCircle, MinusCircle, AlertTriangle,
   Tag, Lock, Eye, FileCheck, DollarSign, Info,
+  ChevronDown, ChevronRight, Loader2,
 } from 'lucide-react';
 
 // --- Types -------------------------------------------------------------------
@@ -15,6 +17,12 @@ interface ComplianceRule {
   compliantCount: number;
   nonCompliantCount: number;
   source: string;
+}
+
+interface NonCompliantResource {
+  resourceId: string;
+  resourceType: string;
+  complianceType: string;
 }
 
 interface GovernanceClientProps {
@@ -129,6 +137,10 @@ export function GovernanceClient({
   status,
   errorMessage,
 }: GovernanceClientProps) {
+  const [expandedRules, setExpandedRules] = useState<Record<string, boolean>>({});
+  const [ruleResources, setRuleResources] = useState<Record<string, NonCompliantResource[]>>({});
+  const [loadingRules, setLoadingRules] = useState<Record<string, boolean>>({});
+
   // Show setup page if Config is not enabled
   if (status === 'not-enabled' || status === 'error') {
     return <ConfigNotEnabled errorMessage={errorMessage} />;
@@ -138,6 +150,36 @@ export function GovernanceClient({
   const pendingRules = rules.filter(
     (r) => r.complianceStatus === 'INSUFFICIENT_DATA' || r.complianceStatus === 'NOT_APPLICABLE',
   ).length;
+
+  async function toggleRuleExpand(ruleName: string) {
+    const isCurrentlyExpanded = expandedRules[ruleName];
+
+    if (isCurrentlyExpanded) {
+      setExpandedRules((prev) => ({ ...prev, [ruleName]: false }));
+      return;
+    }
+
+    // Expand the row
+    setExpandedRules((prev) => ({ ...prev, [ruleName]: true }));
+
+    // Fetch resources if not already loaded
+    if (!ruleResources[ruleName]) {
+      setLoadingRules((prev) => ({ ...prev, [ruleName]: true }));
+      try {
+        const res = await fetch(`/api/governance/resources?rule=${encodeURIComponent(ruleName)}`);
+        const data = await res.json();
+        if (data.resources) {
+          setRuleResources((prev) => ({ ...prev, [ruleName]: data.resources }));
+        } else {
+          setRuleResources((prev) => ({ ...prev, [ruleName]: [] }));
+        }
+      } catch {
+        setRuleResources((prev) => ({ ...prev, [ruleName]: [] }));
+      } finally {
+        setLoadingRules((prev) => ({ ...prev, [ruleName]: false }));
+      }
+    }
+  }
 
   return (
     <div className="space-y-6 animate-in">
@@ -232,7 +274,7 @@ export function GovernanceClient({
         <div className="p-6 pb-3">
           <h3 className="font-semibold">Config Rules</h3>
           <p className="text-sm text-muted-foreground">
-            AWS Config compliance rules and their current status
+            AWS Config compliance rules and their current status. Click non-compliant rules to see affected resources.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -250,36 +292,98 @@ export function GovernanceClient({
               {rules.map((rule) => {
                 const style = statusStyles[rule.complianceStatus] || statusStyles.INSUFFICIENT_DATA;
                 const Icon = style.icon;
+                const isNonCompliant = rule.complianceStatus === 'NON_COMPLIANT' && rule.nonCompliantCount > 0;
+                const isExpanded = expandedRules[rule.ruleName];
+                const isLoading = loadingRules[rule.ruleName];
+                const resources = ruleResources[rule.ruleName];
+
                 return (
-                  <tr key={rule.ruleName} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="px-6 py-3">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg}`}>
-                        <Icon className="h-3 w-3" />
-                        {style.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className="font-mono text-xs">{rule.ruleName}</span>
-                    </td>
-                    <td className="px-6 py-3 text-muted-foreground max-w-md">
-                      <span className="text-xs">{rule.description}</span>
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {rule.source}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      {rule.complianceStatus === 'NON_COMPLIANT' && rule.nonCompliantCount > 0 && (
-                        <span className="text-xs text-red-600 dark:text-red-400">
-                          {rule.nonCompliantCount} failing
+                  <>
+                    <tr
+                      key={rule.ruleName}
+                      className={`border-b last:border-0 ${
+                        isNonCompliant
+                          ? 'cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={isNonCompliant ? () => toggleRuleExpand(rule.ruleName) : undefined}
+                    >
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg}`}>
+                          <Icon className="h-3 w-3" />
+                          {style.label}
                         </span>
-                      )}
-                      {rule.complianceStatus === 'COMPLIANT' && (
-                        <span className="text-xs text-green-600 dark:text-green-400">All passing</span>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-6 py-3">
+                        <span className="font-mono text-xs">{rule.ruleName}</span>
+                      </td>
+                      <td className="px-6 py-3 text-muted-foreground max-w-md">
+                        <span className="text-xs">{rule.description}</span>
+                      </td>
+                      <td className="px-6 py-3">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          {rule.source}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        {isNonCompliant && (
+                          <button
+                            className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRuleExpand(rule.ruleName);
+                            }}
+                          >
+                            {rule.nonCompliantCount} failing
+                            {isExpanded ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </button>
+                        )}
+                        {rule.complianceStatus === 'COMPLIANT' && (
+                          <span className="text-xs text-green-600 dark:text-green-400">All passing</span>
+                        )}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${rule.ruleName}-detail`} className="border-b last:border-0">
+                        <td colSpan={5} className="bg-red-50/50 px-6 py-4 dark:bg-red-900/5">
+                          {isLoading ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading non-compliant resources...
+                            </div>
+                          ) : resources && resources.length > 0 ? (
+                            <div>
+                              <p className="mb-2 text-xs font-medium text-red-700 dark:text-red-400">
+                                Non-compliant resources ({resources.length})
+                              </p>
+                              <div className="space-y-1.5">
+                                {resources.map((r, idx) => (
+                                  <div
+                                    key={`${r.resourceId}-${idx}`}
+                                    className="flex items-center gap-3 rounded-md border border-red-200 bg-white px-3 py-2 dark:border-red-800 dark:bg-card"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate font-mono text-xs">{r.resourceId}</p>
+                                      <p className="text-xs text-muted-foreground">{r.resourceType}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              No detailed resource data available. The Config rule may still be evaluating.
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
               {rules.length === 0 && (
@@ -303,7 +407,7 @@ export function GovernanceClient({
           </p>
           <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
             Rules are evaluated automatically by AWS Config. Add managed or custom rules from the AWS Console
-            to enforce tagging, security, and cost governance policies.
+            to enforce tagging, security, and cost governance policies. Click on non-compliant rules to see which resources need attention.
           </p>
         </div>
       </div>
