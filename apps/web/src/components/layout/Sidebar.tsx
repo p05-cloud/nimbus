@@ -73,16 +73,17 @@ export function Sidebar({ onOpenChat }: SidebarProps) {
         <div className="flex h-14 items-center border-b px-3">
           <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
             {expanded ? (
-              <Image
-                src="/images/pfl-logo.png"
-                alt="Poonawalla Fincorp"
-                width={160}
-                height={40}
-                className="h-9 w-auto shrink-0 object-contain"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-500">
+                  <span className="text-sm font-bold text-white">N</span>
+                </div>
+                <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-lg font-bold text-transparent">
+                  Nimbus
+                </span>
+              </div>
             ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1B2A5B]">
-                <span className="text-sm font-bold text-white">P</span>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-500">
+                <span className="text-sm font-bold text-white">N</span>
               </div>
             )}
           </Link>
@@ -175,8 +176,6 @@ export function Sidebar({ onOpenChat }: SidebarProps) {
             <div className="rounded-md bg-sidebar-accent/50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <Image src="/images/acc-logo.png" alt="ACC" width={40} height={19} className="h-4 w-auto" />
-                <span className="text-[10px] text-muted-foreground">×</span>
-                <Image src="/images/pfl-logo.png" alt="PFL" width={48} height={19} className="h-4 w-auto" />
               </div>
               <p className="mt-1 text-[10px] text-muted-foreground">Nimbus v0.1.0 — Cloud FinOps Platform</p>
             </div>

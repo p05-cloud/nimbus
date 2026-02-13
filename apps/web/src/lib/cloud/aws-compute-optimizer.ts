@@ -140,7 +140,7 @@ function mapRisk(effort: string | undefined): 'VeryLow' | 'Low' | 'Medium' | 'Hi
 
 // --- Cache -------------------------------------------------------------------
 
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours (testing mode)
 let cachedData: ComputeOptimizerSummary | null = null;
 let cachedAt = 0;
 

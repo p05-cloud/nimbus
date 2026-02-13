@@ -14,8 +14,8 @@ export interface DashboardPayload {
   error?: string;
 }
 
-// --- In-memory cache (5 min TTL) — saves ~$0.05 per avoided API batch --------
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// --- In-memory cache (4 hr TTL) — reduces Cost Explorer API calls (~$0.01/req)
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours (testing mode)
 let cachedData: DashboardPayload | null = null;
 let cachedAt = 0;
 

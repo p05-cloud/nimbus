@@ -43,7 +43,7 @@ function createClient(): ConfigServiceClient {
 
 // --- Cache -------------------------------------------------------------------
 
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours (testing mode)
 let cachedData: GovernanceSummary | null = null;
 let cachedAt = 0;
 

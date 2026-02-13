@@ -66,7 +66,7 @@ function mapResource(r: Resource): CloudResource {
 
 // --- Cache -------------------------------------------------------------------
 
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes (resources change less frequently)
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours (testing mode)
 let cachedResources: ResourceSummary | null = null;
 let cachedAt = 0;
 

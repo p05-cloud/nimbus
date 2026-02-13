@@ -18,15 +18,10 @@ export default function HomePage() {
               className="h-8 w-auto"
               priority
             />
-            <span className="text-xs text-muted-foreground">×</span>
-            <Image
-              src="/images/pfl-logo.png"
-              alt="Poonawalla Fincorp"
-              width={100}
-              height={38}
-              className="h-8 w-auto"
-              priority
-            />
+            <span className="text-sm font-semibold text-muted-foreground">|</span>
+            <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-lg font-bold text-transparent">
+              Nimbus
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -172,11 +167,13 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-6 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-3">
             <Image src="/images/acc-logo.png" alt="ACC" width={60} height={28} className="h-6 w-auto" />
-            <span className="text-xs text-muted-foreground">×</span>
-            <Image src="/images/pfl-logo.png" alt="Poonawalla Fincorp" width={80} height={28} className="h-6 w-auto" />
+            <span className="text-sm font-semibold text-muted-foreground">|</span>
+            <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-sm font-bold text-transparent">
+              Nimbus
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Nimbus — Cloud FinOps Platform by ACC for Poonawalla Fincorp
+            Nimbus — Cloud FinOps Platform by ACC
           </p>
         </div>
       </footer>

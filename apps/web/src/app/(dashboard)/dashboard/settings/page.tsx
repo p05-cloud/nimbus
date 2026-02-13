@@ -24,7 +24,8 @@ export default function SettingsPage() {
               <label className="text-sm font-medium">Organization Name</label>
               <input
                 type="text"
-                defaultValue="Poonawalla Fincorp Ltd"
+                defaultValue=""
+                placeholder="Enter organization name"
                 className="mt-1 flex h-9 w-full rounded-md border bg-transparent px-3 text-sm"
               />
             </div>
@@ -32,7 +33,8 @@ export default function SettingsPage() {
               <label className="text-sm font-medium">Primary Contact</label>
               <input
                 type="email"
-                defaultValue="cloudops@poonawallafincorp.com"
+                defaultValue=""
+                placeholder="Enter contact email"
                 className="mt-1 flex h-9 w-full rounded-md border bg-transparent px-3 text-sm"
               />
             </div>

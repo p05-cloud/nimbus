@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { SignInForm } from './SignInForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -13,9 +12,9 @@ export default function SignInPage() {
       <div className="w-full max-w-sm space-y-6 rounded-xl border bg-card p-8 shadow-lg">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-3">
-            <Image src="/images/acc-logo.png" alt="ACC" width={56} height={27} className="h-6 w-auto" />
-            <span className="text-xs text-muted-foreground">×</span>
-            <Image src="/images/pfl-logo.png" alt="Poonawalla Fincorp" width={72} height={27} className="h-6 w-auto" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-500">
+              <span className="text-lg font-bold text-white">N</span>
+            </div>
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">
