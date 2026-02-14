@@ -14,6 +14,8 @@ import {
   Server,
   Settings,
   Shield,
+  ShieldCheck,
+  Tag,
   Cloud,
   Sparkles,
   Monitor,
@@ -26,12 +28,14 @@ const navigation = [
   { name: 'Budgets', href: '/dashboard/budgets', icon: PieChart },
   { name: 'Recommendations', href: '/dashboard/recommendations', icon: Lightbulb },
   { name: 'Anomalies', href: '/dashboard/anomalies', icon: TrendingDown },
+  { name: 'Trusted Advisor', href: '/dashboard/trusted-advisor', icon: ShieldCheck },
   { name: 'Resources', href: '/dashboard/resources', icon: Server },
   { name: 'Cloud Accounts', href: '/dashboard/accounts', icon: Cloud },
 ];
 
 const secondaryNav = [
   { name: 'Governance', href: '/dashboard/governance', icon: Shield },
+  { name: 'Tag Governance', href: '/dashboard/tag-governance', icon: Tag },
   { name: 'NOC / TV Mode', href: '/dashboard/tv', icon: Monitor },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
