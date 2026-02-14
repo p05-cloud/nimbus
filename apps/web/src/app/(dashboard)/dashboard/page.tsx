@@ -12,6 +12,11 @@ import { DataTransferCard } from './components/DataTransferCard';
 import { CommitmentCoverageCard } from './components/CommitmentCoverageCard';
 import { ServiceHealthIndicators } from './components/ServiceHealthIndicators';
 import { FinOpsMaturityScorecard } from './components/FinOpsMaturityScorecard';
+import { TrustedAdvisorScorecard } from './components/TrustedAdvisorScorecard';
+import { RealBudgetsCard } from './components/RealBudgetsCard';
+import { TagComplianceCard } from './components/TagComplianceCard';
+import { SavingsOpportunitiesCard } from './components/SavingsOpportunitiesCard';
+import { NativeAnomaliesCard } from './components/NativeAnomaliesCard';
 import { AlertTriangle } from 'lucide-react';
 
 export const metadata = { title: 'Dashboard' };
@@ -69,6 +74,26 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* Phase 3: Trusted Advisor + AWS Budgets + Tag Compliance */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <TrustedAdvisorScorecard trustedAdvisor={data.trustedAdvisor} />
+        <RealBudgetsCard awsBudgets={data.awsBudgets} />
+        <TagComplianceCard tagCompliance={data.tagCompliance} />
+      </div>
+
+      {/* Phase 3: Savings Opportunities + Native Anomalies */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <SavingsOpportunitiesCard
+          ceRightsizing={data.ceRightsizing}
+          riRecommendations={data.riRecommendations}
+          spRecommendations={data.spRecommendations}
+          optimizerSavings={data.optimizerSavings}
+          optimizerStatus={data.optimizerStatus}
+          trustedAdvisorSavings={data.trustedAdvisor?.totalEstimatedSavings ?? 0}
+        />
+        <NativeAnomaliesCard nativeAnomalies={data.nativeAnomalies} />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">
           <CostTrendChart monthlyCosts={data.monthlyCosts} />
@@ -114,9 +139,12 @@ export default async function DashboardPage() {
         hasBudgetTracking={data.previousMonthTotal > 0}
         hasOptimizationTracking={data.optimizerStatus === 'active'}
         hasCostAllocation={data.topServices.length > 3}
-        hasAnomalyDetection={data.topServices.some((s) => s.change > 50)}
+        hasAnomalyDetection={data.nativeAnomalies?.status === 'active' || data.topServices.some((s) => s.change > 50)}
         commitmentCoveragePercent={data.commitment.savingsPlansCoveragePercent}
         dataTransferVisible={data.dataTransfer.length > 0}
+        hasTrustedAdvisor={data.trustedAdvisor?.status === 'active'}
+        hasBudgetGovernance={data.awsBudgets?.status === 'active'}
+        hasTagCompliance={data.tagCompliance?.status === 'active'}
       />
     </div>
   );

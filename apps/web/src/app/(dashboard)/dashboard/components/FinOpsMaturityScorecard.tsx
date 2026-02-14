@@ -7,9 +7,12 @@ interface FinOpsMaturityScorecardProps {
   hasBudgetTracking: boolean;        // previousMonthTotal > 0 (used as budget baseline)
   hasOptimizationTracking: boolean;  // optimizerStatus === 'active'
   hasCostAllocation: boolean;        // topServices.length > 3
-  hasAnomalyDetection: boolean;      // any service with >50% MoM change detected
+  hasAnomalyDetection: boolean;      // native anomaly detection or spike detection
   commitmentCoveragePercent: number; // from commitment data
   dataTransferVisible: boolean;      // dataTransfer.length > 0
+  hasTrustedAdvisor?: boolean;       // trustedAdvisor active
+  hasBudgetGovernance?: boolean;     // AWS Budgets configured
+  hasTagCompliance?: boolean;        // tag compliance active
 }
 
 interface MaturityDimension {
@@ -48,6 +51,9 @@ export function FinOpsMaturityScorecard({
   hasAnomalyDetection,
   commitmentCoveragePercent,
   dataTransferVisible,
+  hasTrustedAdvisor,
+  hasBudgetGovernance,
+  hasTagCompliance,
 }: FinOpsMaturityScorecardProps) {
   const dimensions: MaturityDimension[] = [
     {
@@ -100,6 +106,27 @@ export function FinOpsMaturityScorecard({
       score: dataTransferVisible ? 1 : 0,
       maxScore: 1,
       tip: dataTransferVisible ? 'Network cost visibility active' : 'No data transfer costs detected',
+    },
+    {
+      label: 'Trusted Advisor',
+      status: getDimensionStatus(!!hasTrustedAdvisor),
+      score: hasTrustedAdvisor ? 1 : 0,
+      maxScore: 1,
+      tip: hasTrustedAdvisor ? 'AWS Trusted Advisor checks active' : 'Requires Business/Enterprise Support',
+    },
+    {
+      label: 'Budget Governance',
+      status: getDimensionStatus(!!hasBudgetGovernance, hasBudgetTracking),
+      score: hasBudgetGovernance ? 2 : hasBudgetTracking ? 1 : 0,
+      maxScore: 2,
+      tip: hasBudgetGovernance ? 'AWS Budgets configured' : 'Set up AWS Budgets for spend limits',
+    },
+    {
+      label: 'Tag Compliance',
+      status: getDimensionStatus(!!hasTagCompliance),
+      score: hasTagCompliance ? 1 : 0,
+      maxScore: 1,
+      tip: hasTagCompliance ? 'Tag governance monitoring active' : 'Tag your resources for cost allocation',
     },
   ];
 

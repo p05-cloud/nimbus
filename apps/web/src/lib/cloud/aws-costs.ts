@@ -2,6 +2,11 @@ import {
   CostExplorerClient,
   GetCostAndUsageCommand,
   GetCostForecastCommand,
+  GetRightsizingRecommendationCommand,
+  GetReservationPurchaseRecommendationCommand,
+  GetSavingsPlansPurchaseRecommendationCommand,
+  GetAnomalyMonitorsCommand,
+  GetAnomaliesCommand,
   type GetCostAndUsageCommandInput,
 } from '@aws-sdk/client-cost-explorer';
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
@@ -293,6 +298,235 @@ export async function getCommitmentCoverage(): Promise<CommitmentCoverage> {
       totalOnDemandCost: 0,
       totalCommittedCost: 0,
       estimatedSavingsFromCommitments: 0,
+    };
+  }
+}
+
+// --- CE Rightsizing Recommendations ------------------------------------------
+
+export interface CERightsizingRecommendation {
+  instanceId: string;
+  instanceType: string;
+  action: string; // 'Terminate' | 'Modify'
+  targetInstanceType: string;
+  estimatedMonthlySavings: number;
+}
+
+export async function getCERightsizingRecommendations(): Promise<CERightsizingRecommendation[]> {
+  const client = createCostExplorerClient();
+
+  try {
+    const command = new GetRightsizingRecommendationCommand({
+      Service: 'AmazonEC2',
+      Configuration: {
+        RecommendationTarget: 'SAME_INSTANCE_FAMILY',
+        BenefitsConsidered: true,
+      },
+    });
+
+    const response = await client.send(command);
+
+    return (response.RightsizingRecommendations || []).map((rec) => {
+      const currentInstance = rec.CurrentInstance;
+      const instanceId = currentInstance?.ResourceId || '';
+      const instanceType =
+        currentInstance?.ResourceDetails?.EC2ResourceDetails?.InstanceType ||
+        '';
+      const action = (rec.RightsizingType || '') as string;
+
+      let targetInstanceType = 'N/A';
+      if (action !== 'TERMINATE' && rec.ModifyRecommendationDetail?.TargetInstances?.[0]) {
+        targetInstanceType =
+          rec.ModifyRecommendationDetail.TargetInstances[0].ResourceDetails?.EC2ResourceDetails?.InstanceType || 'N/A';
+      }
+
+      const estimatedMonthlySavings = parseFloat(
+        rec.ModifyRecommendationDetail?.TargetInstances?.[0]?.EstimatedMonthlySavings || '0'
+      ) || parseFloat(
+        rec.TerminateRecommendationDetail?.EstimatedMonthlySavings || '0'
+      );
+
+      return {
+        instanceId,
+        instanceType,
+        action,
+        targetInstanceType,
+        estimatedMonthlySavings,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+// --- RI Purchase Recommendations ---------------------------------------------
+
+export interface RIPurchaseRecommendation {
+  instanceType: string;
+  estimatedMonthlySavings: number;
+}
+
+export async function getRIPurchaseRecommendations(): Promise<RIPurchaseRecommendation[]> {
+  const client = createCostExplorerClient();
+
+  try {
+    const command = new GetReservationPurchaseRecommendationCommand({
+      Service: 'Amazon Elastic Compute Cloud - Compute',
+      TermInYears: 'ONE_YEAR',
+      PaymentOption: 'NO_UPFRONT',
+      LookbackPeriodInDays: 'SIXTY_DAYS',
+    });
+
+    const response = await client.send(command);
+    const details = response.Recommendations?.[0]?.RecommendationDetails || [];
+
+    return details.map((detail) => ({
+      instanceType:
+        detail.InstanceDetails?.EC2InstanceDetails?.InstanceType || '',
+      estimatedMonthlySavings: parseFloat(
+        detail.EstimatedMonthlySavingsAmount || '0'
+      ),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// --- Savings Plans Purchase Recommendations ----------------------------------
+
+export interface SPPurchaseRecommendation {
+  savingsPlanType: string;
+  estimatedMonthlySavings: number;
+}
+
+export async function getSPPurchaseRecommendations(): Promise<SPPurchaseRecommendation[]> {
+  const client = createCostExplorerClient();
+
+  try {
+    const command = new GetSavingsPlansPurchaseRecommendationCommand({
+      SavingsPlansType: 'COMPUTE_SP',
+      TermInYears: 'ONE_YEAR',
+      PaymentOption: 'NO_UPFRONT',
+      LookbackPeriodInDays: 'SIXTY_DAYS',
+    });
+
+    const response = await client.send(command);
+    const details =
+      response.SavingsPlansPurchaseRecommendation?.SavingsPlansPurchaseRecommendationDetails || [];
+
+    return details.map((detail) => ({
+      savingsPlanType: detail.SavingsPlansDetails?.OfferingId || 'COMPUTE_SP',
+      estimatedMonthlySavings: parseFloat(
+        detail.EstimatedSavingsAmount || '0'
+      ),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// --- Native Anomaly Detection ------------------------------------------------
+
+export interface AwsAnomaly {
+  anomalyId: string;
+  startDate: string;
+  endDate: string;
+  dimensionValue: string;
+  rootCauses: { service: string; region: string; usageType: string }[];
+  impact: {
+    maxImpact: number;
+    totalImpact: number;
+    totalActualSpend: number;
+    totalExpectedSpend: number;
+  };
+  feedback: string;
+}
+
+export interface NativeAnomalySummary {
+  anomalies: AwsAnomaly[];
+  monitors: { monitorArn: string; monitorName: string; monitorType: string }[];
+  totalImpact: number;
+  activeAnomalies: number;
+  status: 'active' | 'no-monitors' | 'error';
+  errorMessage?: string;
+}
+
+export async function getNativeAnomalies(): Promise<NativeAnomalySummary> {
+  const client = createCostExplorerClient();
+
+  try {
+    // Fetch anomaly monitors
+    const monitorsResponse = await client.send(new GetAnomalyMonitorsCommand({}));
+    const monitors = (monitorsResponse.AnomalyMonitors || []).map((m) => ({
+      monitorArn: m.MonitorArn || '',
+      monitorName: m.MonitorName || '',
+      monitorType: m.MonitorType || '',
+    }));
+
+    if (monitors.length === 0) {
+      return {
+        anomalies: [],
+        monitors: [],
+        totalImpact: 0,
+        activeAnomalies: 0,
+        status: 'no-monitors',
+      };
+    }
+
+    // Fetch anomalies from the last 30 days
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const anomaliesResponse = await client.send(
+      new GetAnomaliesCommand({
+        DateInterval: {
+          StartDate: formatDate(thirtyDaysAgo),
+          EndDate: formatDate(now),
+        },
+      })
+    );
+
+    const anomalies: AwsAnomaly[] = (anomaliesResponse.Anomalies || [])
+      .map((a) => ({
+        anomalyId: a.AnomalyId || '',
+        startDate: a.AnomalyStartDate || '',
+        endDate: a.AnomalyEndDate || '',
+        dimensionValue: a.DimensionValue || '',
+        rootCauses: (a.RootCauses || []).map((rc) => ({
+          service: rc.Service || '',
+          region: rc.Region || '',
+          usageType: rc.UsageType || '',
+        })),
+        impact: {
+          maxImpact: a.Impact?.MaxImpact || 0,
+          totalImpact: a.Impact?.TotalImpact || 0,
+          totalActualSpend: a.Impact?.TotalActualSpend || 0,
+          totalExpectedSpend: a.Impact?.TotalExpectedSpend || 0,
+        },
+        feedback: a.Feedback || '',
+      }))
+      .filter((a) => a.impact.totalImpact !== 0)
+      .sort((a, b) => b.impact.totalImpact - a.impact.totalImpact);
+
+    const totalImpact = anomalies.reduce((sum, a) => sum + a.impact.totalImpact, 0);
+    const activeAnomalies = anomalies.length;
+
+    return {
+      anomalies,
+      monitors,
+      totalImpact,
+      activeAnomalies,
+      status: 'active',
+    };
+  } catch (error) {
+    return {
+      anomalies: [],
+      monitors: [],
+      totalImpact: 0,
+      activeAnomalies: 0,
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

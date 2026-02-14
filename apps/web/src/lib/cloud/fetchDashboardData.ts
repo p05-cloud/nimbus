@@ -4,10 +4,21 @@ import {
   fetchAwsDashboardData,
   getDataTransferCosts,
   getCommitmentCoverage,
+  getCERightsizingRecommendations,
+  getRIPurchaseRecommendations,
+  getSPPurchaseRecommendations,
+  getNativeAnomalies,
   type DataTransferCost,
   type CommitmentCoverage,
+  type CERightsizingRecommendation,
+  type RIPurchaseRecommendation,
+  type SPPurchaseRecommendation,
+  type NativeAnomalySummary,
 } from './aws-costs';
 import { fetchComputeOptimizerRecommendations } from './aws-compute-optimizer';
+import { fetchTrustedAdvisorSummary, type TrustedAdvisorSummary } from './aws-trusted-advisor';
+import { fetchAwsBudgets, type AwsBudgetsSummary } from './aws-budgets';
+import { fetchTagCompliance, type TagComplianceSummary } from './aws-tags';
 
 export interface DashboardPayload {
   totalSpendMTD: number;
@@ -25,6 +36,14 @@ export interface DashboardPayload {
   optimizerSavings: number;
   optimizerStatus: 'active' | 'collecting' | 'not-enrolled' | 'error';
   optimizerByType: { type: string; count: number; savings: number }[];
+  // Phase 3 additions
+  trustedAdvisor: TrustedAdvisorSummary | null;
+  awsBudgets: AwsBudgetsSummary | null;
+  tagCompliance: TagComplianceSummary | null;
+  ceRightsizing: CERightsizingRecommendation[];
+  riRecommendations: RIPurchaseRecommendation[];
+  spRecommendations: SPPurchaseRecommendation[];
+  nativeAnomalies: NativeAnomalySummary | null;
 }
 
 // --- In-memory cache (4 hr TTL) — reduces Cost Explorer API calls (~$0.01/req)
@@ -53,11 +72,30 @@ export async function getDashboardData(): Promise<DashboardPayload> {
     }
 
     // Fetch all data in parallel
-    const [awsData, dataTransfer, commitment, optimizer] = await Promise.all([
+    const [
+      awsData,
+      dataTransfer,
+      commitment,
+      optimizer,
+      trustedAdvisor,
+      awsBudgets,
+      tagCompliance,
+      ceRightsizing,
+      riRecommendations,
+      spRecommendations,
+      nativeAnomalies,
+    ] = await Promise.all([
       fetchAwsDashboardData(),
       getDataTransferCosts().catch(() => [] as DataTransferCost[]),
       getCommitmentCoverage().catch(() => defaultCommitment),
       fetchComputeOptimizerRecommendations().catch(() => null),
+      fetchTrustedAdvisorSummary().catch(() => null),
+      fetchAwsBudgets().catch(() => null),
+      fetchTagCompliance().catch(() => null),
+      getCERightsizingRecommendations().catch(() => [] as CERightsizingRecommendation[]),
+      getRIPurchaseRecommendations().catch(() => [] as RIPurchaseRecommendation[]),
+      getSPPurchaseRecommendations().catch(() => [] as SPPurchaseRecommendation[]),
+      getNativeAnomalies().catch(() => null),
     ]);
 
     const data: DashboardPayload = {
@@ -67,6 +105,13 @@ export async function getDashboardData(): Promise<DashboardPayload> {
       optimizerSavings: optimizer?.totalEstimatedSavings ?? 0,
       optimizerStatus: optimizer?.optimizerStatus ?? 'error',
       optimizerByType: optimizer?.byType ?? [],
+      trustedAdvisor,
+      awsBudgets,
+      tagCompliance,
+      ceRightsizing,
+      riRecommendations,
+      spRecommendations,
+      nativeAnomalies,
     };
 
     cachedData = data;
@@ -96,5 +141,12 @@ function fallbackData(error: string): DashboardPayload {
     optimizerSavings: 0,
     optimizerStatus: 'error',
     optimizerByType: [],
+    trustedAdvisor: null,
+    awsBudgets: null,
+    tagCompliance: null,
+    ceRightsizing: [],
+    riRecommendations: [],
+    spRecommendations: [],
+    nativeAnomalies: null,
   };
 }
