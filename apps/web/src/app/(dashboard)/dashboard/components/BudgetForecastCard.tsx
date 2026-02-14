@@ -3,10 +3,16 @@
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
+interface AwsBudgetsSummary {
+  totalBudgetLimit: number;
+  status: 'active' | 'no-budgets' | 'error';
+}
+
 interface BudgetForecastCardProps {
   totalSpendMTD: number;
   forecastedSpend: number;
   previousMonthTotal: number;
+  awsBudgets?: AwsBudgetsSummary | null;
 }
 
 type RiskLevel = 'low' | 'medium' | 'high';
@@ -39,10 +45,17 @@ export function BudgetForecastCard({
   totalSpendMTD,
   forecastedSpend,
   previousMonthTotal,
+  awsBudgets,
 }: BudgetForecastCardProps) {
   const { format } = useCurrency();
 
-  const budget = previousMonthTotal > 0 ? previousMonthTotal * 1.1 : 0;
+  // Use real AWS Budgets when available, otherwise fall back to prev month + 10%
+  const budget =
+    awsBudgets?.status === 'active' && awsBudgets.totalBudgetLimit > 0
+      ? awsBudgets.totalBudgetLimit
+      : previousMonthTotal > 0
+        ? previousMonthTotal * 1.1
+        : 0;
   const variance = forecastedSpend - budget;
   const usagePct = budget > 0 ? (totalSpendMTD / budget) * 100 : 0;
   const forecastRatio = budget > 0 ? (forecastedSpend / budget) * 100 : 0;

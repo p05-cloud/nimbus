@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, TrendingUp, Receipt, Calculator } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, CalendarDays } from 'lucide-react';
 import { formatPercentage } from '@/lib/utils';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
@@ -14,31 +14,12 @@ interface KpiCardsProps {
 export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage, previousMonthTotal }: KpiCardsProps) {
   const { format } = useCurrency();
 
-  // Separate cloud usage from tax (18% GST for India)
-  const taxRate = 0.18;
-  const cloudSpend = totalSpendMTD / (1 + taxRate);
-  const tax = totalSpendMTD - cloudSpend;
-
   const kpis = [
-    {
-      title: 'Cloud Usage (MTD)',
-      value: cloudSpend,
-      change: changePercentage,
-      icon: DollarSign,
-      trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
-    },
-    {
-      title: 'Tax (GST 18%)',
-      value: tax,
-      change: 0,
-      icon: Receipt,
-      trend: 'neutral' as const,
-    },
     {
       title: 'Total Spend (MTD)',
       value: totalSpendMTD,
       change: changePercentage,
-      icon: Calculator,
+      icon: DollarSign,
       trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
     },
     {
@@ -47,6 +28,21 @@ export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage, pre
       change: 0,
       icon: TrendingUp,
       trend: 'neutral' as const,
+    },
+    {
+      title: 'Previous Month',
+      value: previousMonthTotal,
+      change: 0,
+      icon: CalendarDays,
+      trend: 'neutral' as const,
+    },
+    {
+      title: 'MoM Change',
+      value: Math.abs(totalSpendMTD - previousMonthTotal),
+      change: changePercentage,
+      icon: changePercentage <= 0 ? TrendingDown : TrendingUp,
+      trend: changePercentage <= 0 ? ('down' as const) : ('up' as const),
+      prefix: changePercentage <= 0 ? '-' : '+',
     },
   ];
 
@@ -60,7 +56,7 @@ export function KpiCards({ totalSpendMTD, forecastedSpend, changePercentage, pre
           </div>
           <div className="mt-2">
             <p className="text-2xl font-bold">
-              {format(kpi.value)}
+              {'prefix' in kpi && kpi.prefix ? `${kpi.prefix}` : ''}{format(kpi.value)}
             </p>
             {kpi.change !== 0 && (
               <p

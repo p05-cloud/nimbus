@@ -3,10 +3,16 @@
 import { Flame, Target } from 'lucide-react';
 import { useCurrency } from '@/components/providers/CurrencyProvider';
 
+interface AwsBudgetsSummary {
+  totalBudgetLimit: number;
+  status: 'active' | 'no-budgets' | 'error';
+}
+
 interface BurnRateCardProps {
   totalSpendMTD: number;
   forecastedSpend: number;
   previousMonthTotal: number;
+  awsBudgets?: AwsBudgetsSummary | null;
 }
 
 type PaceStatus = 'over' | 'slight' | 'on-pace';
@@ -63,6 +69,7 @@ export function BurnRateCard({
   totalSpendMTD,
   forecastedSpend,
   previousMonthTotal,
+  awsBudgets,
 }: BurnRateCardProps) {
   const { format } = useCurrency();
 
@@ -72,7 +79,12 @@ export function BurnRateCard({
   const daysRemaining = daysInMonth - dayOfMonth;
 
   const currentBurnRate = totalSpendMTD / Math.max(dayOfMonth, 1);
-  const budget = previousMonthTotal * 1.1;
+
+  // Use real AWS Budgets when available, otherwise fall back to prev month + 10%
+  const budget =
+    awsBudgets?.status === 'active' && awsBudgets.totalBudgetLimit > 0
+      ? awsBudgets.totalBudgetLimit
+      : previousMonthTotal * 1.1;
   const budgetRemaining = Math.max(budget - totalSpendMTD, 0);
   const requiredBurnRate = daysRemaining > 0 ? budgetRemaining / daysRemaining : 0;
 

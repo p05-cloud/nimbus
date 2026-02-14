@@ -5,6 +5,7 @@ import {
   GetRightsizingRecommendationCommand,
   GetReservationPurchaseRecommendationCommand,
   GetSavingsPlansPurchaseRecommendationCommand,
+  GetSavingsPlansUtilizationCommand,
   GetAnomalyMonitorsCommand,
   GetAnomaliesCommand,
   type GetCostAndUsageCommandInput,
@@ -258,18 +259,21 @@ export async function getCommitmentCoverage(): Promise<CommitmentCoverage> {
   const currentMonthStart = getMonthStart(now);
 
   try {
-    const command = new GetCostAndUsageCommand({
-      TimePeriod: { Start: formatDate(currentMonthStart), End: formatDate(now) },
-      Granularity: 'MONTHLY',
-      Metrics: ['UnblendedCost', 'AmortizedCost'],
-      GroupBy: [{ Type: 'DIMENSION', Key: 'PURCHASE_TYPE' }],
-    });
+    // Fetch purchase-type breakdown AND real Savings Plans utilization in parallel
+    const [purchaseTypeResponse, spUtilization] = await Promise.all([
+      client.send(new GetCostAndUsageCommand({
+        TimePeriod: { Start: formatDate(currentMonthStart), End: formatDate(now) },
+        Granularity: 'MONTHLY',
+        Metrics: ['UnblendedCost', 'AmortizedCost'],
+        GroupBy: [{ Type: 'DIMENSION', Key: 'PURCHASE_TYPE' }],
+      })),
+      getRealSPUtilization(client, currentMonthStart, now),
+    ]);
 
-    const response = await client.send(command);
     let onDemandCost = 0;
     let committedCost = 0;
 
-    for (const group of response.ResultsByTime?.[0]?.Groups || []) {
+    for (const group of purchaseTypeResponse.ResultsByTime?.[0]?.Groups || []) {
       const purchaseType = group.Keys?.[0] || '';
       const cost = parseFloat(group.Metrics?.UnblendedCost?.Amount || '0');
 
@@ -282,14 +286,13 @@ export async function getCommitmentCoverage(): Promise<CommitmentCoverage> {
 
     const totalCost = onDemandCost + committedCost;
     const coveragePercent = totalCost > 0 ? (committedCost / totalCost) * 100 : 0;
-    const estimatedSavings = committedCost > 0 ? committedCost * 0.25 : 0;
 
     return {
       savingsPlansCoveragePercent: coveragePercent,
-      savingsPlansUtilizationPercent: committedCost > 0 ? 85 : 0,
+      savingsPlansUtilizationPercent: spUtilization,
       totalOnDemandCost: onDemandCost,
       totalCommittedCost: committedCost,
-      estimatedSavingsFromCommitments: estimatedSavings,
+      estimatedSavingsFromCommitments: spUtilization > 0 ? committedCost * (spUtilization / 100) * 0.25 : 0,
     };
   } catch {
     return {
@@ -299,6 +302,28 @@ export async function getCommitmentCoverage(): Promise<CommitmentCoverage> {
       totalCommittedCost: 0,
       estimatedSavingsFromCommitments: 0,
     };
+  }
+}
+
+/** Fetch real Savings Plans utilization percentage from the CE API. */
+async function getRealSPUtilization(
+  client: CostExplorerClient,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<number> {
+  try {
+    const response = await client.send(new GetSavingsPlansUtilizationCommand({
+      TimePeriod: {
+        Start: formatDate(periodStart),
+        End: formatDate(periodEnd),
+      },
+    }));
+
+    const pct = parseFloat(response.Total?.Utilization?.UtilizationPercentage ?? '0');
+    return pct;
+  } catch (error) {
+    console.error('[CommitmentCoverage] SP utilization API failed:', error);
+    return 0;
   }
 }
 

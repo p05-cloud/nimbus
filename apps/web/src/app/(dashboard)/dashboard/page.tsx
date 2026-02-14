@@ -57,11 +57,13 @@ export default async function DashboardPage() {
           totalSpendMTD={data.totalSpendMTD}
           forecastedSpend={data.forecastedSpend}
           previousMonthTotal={data.previousMonthTotal}
+          awsBudgets={data.awsBudgets}
         />
         <BurnRateCard
           totalSpendMTD={data.totalSpendMTD}
           forecastedSpend={data.forecastedSpend}
           previousMonthTotal={data.previousMonthTotal}
+          awsBudgets={data.awsBudgets}
         />
       </div>
 

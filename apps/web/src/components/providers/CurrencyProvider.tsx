@@ -4,25 +4,45 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 export type Currency = 'INR' | 'USD';
 
+interface RateInfo {
+  lastUpdated: string;
+  source: string;
+}
+
 interface CurrencyContextValue {
   currency: Currency;
   setCurrency: (c: Currency) => void;
-  convert: (amountInINR: number) => number;
-  format: (amountInINR: number) => string;
-  formatCompact: (amountInINR: number) => string;
+  /** Convert a USD amount to the selected display currency. */
+  convert: (amountInUSD: number) => number;
+  /** Format a USD amount as a currency string in the selected display currency. */
+  format: (amountInUSD: number) => string;
+  /** Compact format (e.g. $1.2K or ₹1.5L) */
+  formatCompact: (amountInUSD: number) => string;
   symbol: string;
+  /** The multiplier applied to USD values for the current display currency. */
   rate: number;
+  /** Live exchange-rate metadata (source + timestamp). */
+  rateInfo: RateInfo | null;
 }
 
-// Exchange rate: 1 USD = 83 INR (production would fetch from API)
-const EXCHANGE_RATES: Record<Currency, { rate: number; locale: string; symbol: string }> = {
-  INR: { rate: 1, locale: 'en-IN', symbol: '\u20B9' },
-  USD: { rate: 1 / 83, locale: 'en-US', symbol: '$' },
-};
+interface CurrencyProviderProps {
+  children: React.ReactNode;
+  /** Live USD → INR rate fetched server-side. */
+  usdToInrRate: number;
+  /** ISO timestamp of when the rate was last fetched. */
+  rateLastUpdated?: string;
+  /** Source of the rate (e.g. "open.er-api.com"). */
+  rateSource?: string;
+}
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
+export function CurrencyProvider({
+  children,
+  usdToInrRate,
+  rateLastUpdated,
+  rateSource,
+}: CurrencyProviderProps) {
   const [currency, setCurrencyState] = useState<Currency>('INR');
 
   useEffect(() => {
@@ -37,16 +57,23 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('nimbus-currency', c);
   }, []);
 
-  const config = EXCHANGE_RATES[currency];
+  // USD is the base currency (source data from AWS).
+  // When displaying in INR we multiply by the live rate.
+  const configs: Record<Currency, { rate: number; locale: string; symbol: string }> = {
+    USD: { rate: 1, locale: 'en-US', symbol: '$' },
+    INR: { rate: usdToInrRate, locale: 'en-IN', symbol: '₹' },
+  };
+
+  const config = configs[currency];
 
   const convert = useCallback(
-    (amountInINR: number) => amountInINR * config.rate,
+    (amountInUSD: number) => amountInUSD * config.rate,
     [config.rate],
   );
 
   const format = useCallback(
-    (amountInINR: number) => {
-      const converted = amountInINR * config.rate;
+    (amountInUSD: number) => {
+      const converted = amountInUSD * config.rate;
       return new Intl.NumberFormat(config.locale, {
         style: 'currency',
         currency,
@@ -58,8 +85,8 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   );
 
   const formatCompact = useCallback(
-    (amountInINR: number) => {
-      const converted = amountInINR * config.rate;
+    (amountInUSD: number) => {
+      const converted = amountInUSD * config.rate;
       return new Intl.NumberFormat(config.locale, {
         style: 'currency',
         currency,
@@ -71,6 +98,11 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     [currency, config.locale, config.rate],
   );
 
+  const rateInfo: RateInfo | null =
+    rateLastUpdated && rateSource
+      ? { lastUpdated: rateLastUpdated, source: rateSource }
+      : null;
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -81,6 +113,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         formatCompact,
         symbol: config.symbol,
         rate: config.rate,
+        rateInfo,
       }}
     >
       {children}
